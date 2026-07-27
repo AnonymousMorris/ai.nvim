@@ -1,0 +1,9 @@
+# Dependencies
+node_modules/
+.deps/
+
+# Editor and operating-system artifacts
+*.swp
+*.swo
+*~
+.DS_Store

@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Neovim ${{ matrix.neovim }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        neovim: [v0.11.4, stable]
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Install Neovim
+        id: neovim
+        uses: rhysd/action-setup-vim@febef33995d6649302e9d88dda81e071b68f16a7 # v1
+        with:
+          version: ${{ matrix.neovim }}
+          neovim: true
+
+      - name: Install snacks.nvim
+        env:
+          SNACKS_COMMIT: e6fd58c82f2f3fcddd3fe81703d47d6d48fc7b9f
+        run: |
+          git init "$RUNNER_TEMP/snacks.nvim"
+          git -C "$RUNNER_TEMP/snacks.nvim" fetch --depth=1 \
+            https://github.com/folke/snacks.nvim.git "$SNACKS_COMMIT"
+          git -C "$RUNNER_TEMP/snacks.nvim" checkout --detach FETCH_HEAD
+
+      - name: Run tests
+        env:
+          NVIM: ${{ steps.neovim.outputs.executable }}
+          SNACKS_NVIM: ${{ runner.temp }}/snacks.nvim
+        run: ./scripts/test
