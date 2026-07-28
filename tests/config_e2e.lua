@@ -23,7 +23,7 @@ local config = Config.resolve({
 assert_equal(config.backend, "pi", "default backend")
 assert_equal(config.binary, "pi", "default binary")
 assert_equal(config.thinking, "off", "default thinking level")
-assert_equal(config.extensions, false, "default extensions")
+assert_equal(config.extensions, true, "default extensions")
 assert_equal(config.skills, false, "default skills")
 assert_equal(config.auto_close, true, "default auto close")
 assert_equal(config.model, "test-model", "overridden model")

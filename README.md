@@ -2,6 +2,10 @@
 
 A small Neovim chat interface for [Pi](https://github.com/badlogic/pi-mono/tree/main/packages/coding-agent). It supports streaming responses, tool status, multi-turn conversations, and visual-selection context.
 
+## Demo
+
+![Opening ai.nvim and typing a question in its chat input](assets/demo.gif)
+
 ## Requirements
 
 - Neovim 0.11+
@@ -55,7 +59,7 @@ The expanded lazy.nvim configuration below shows the plugin's actual defaults. I
   opts = {
     backend = "pi",
     binary = "pi",
-    extensions = false,
+    extensions = true,
     skills = false,
     thinking = "off",
     auto_close = true,
@@ -106,7 +110,7 @@ The expanded lazy.nvim configuration below shows the plugin's actual defaults. I
 
 Without lazy.nvim, pass the contents of `opts` above to `require("ai").setup()`.
 
-Pi runs in RPC mode with session persistence disabled. Extensions and skills are also disabled unless explicitly enabled.
+Pi runs in RPC mode with session persistence disabled. Extensions are enabled by default, while skills are disabled unless explicitly enabled.
 
 Set `chat.keys = false` to disable all chat-specific keymaps, or set `chat.keys.input` or `chat.keys.display` to `false` to disable one group.
 
