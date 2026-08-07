@@ -14,14 +14,16 @@ local Input = require("ai.ui.input")
 local Chat = {}
 Chat.__index = Chat
 
----Moves focus to the transcript window.
+---Moves focus to the transcript window in normal mode.
 function Chat:focus_display()
+    vim.cmd.stopinsert()
     self.display:focus()
 end
 
----Moves focus to the input window.
+---Moves focus to the input window in insert mode.
 function Chat:focus_input()
     self.input:focus()
+    vim.cmd.startinsert()
 end
 
 ---Resizes the layout when the input's rendered height changes.
@@ -122,11 +124,16 @@ function M.new(display_buf, input_buf, opts)
         keys = config.keys.display,
         on_close = close_layout,
     })
+    local input_keys = vim.deepcopy(config.keys.input)
+    if input_keys["<Tab>"] and input_keys.i_tab == nil then
+        -- Replaces Snacks.input's insert-mode completion mapping.
+        input_keys.i_tab = false
+    end
     chat.input = Input.input({
         win = {
             buf = input_buf,
             actions = actions,
-            keys = config.keys.input,
+            keys = input_keys,
             on_close = close_layout,
         },
     }, opts.on_submit)

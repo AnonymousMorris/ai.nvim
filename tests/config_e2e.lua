@@ -28,6 +28,31 @@ assert_equal(config.skills, false, "default skills")
 assert_equal(config.auto_close, true, "default auto close")
 assert_equal(config.model, "test-model", "overridden model")
 assert_equal(config.chat, { keys = false }, "overridden chat config")
+assert_equal(
+    Config.defaults.chat.keys.input["<Tab>"][1],
+    "focus_display",
+    "default input Tab key"
+)
+assert_equal(
+    Config.defaults.chat.keys.input["<Tab>"].mode,
+    { "i", "n" },
+    "default input Tab modes"
+)
+assert_equal(
+    Config.defaults.chat.keys.display["<Tab>"][1],
+    "focus_input",
+    "default display Tab key"
+)
+assert_equal(
+    Config.defaults.chat.keys.input["<C-k>"],
+    nil,
+    "removed input Control-K key"
+)
+assert_equal(
+    Config.defaults.chat.keys.display["<C-j>"],
+    nil,
+    "removed display Control-J key"
+)
 
 local backend = Config.backend(config)
 assert_equal(backend.backend, "pi", "backend name")

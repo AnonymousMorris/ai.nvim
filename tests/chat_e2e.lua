@@ -22,6 +22,14 @@ local function assert_equal(actual, expected, message)
     )
 end
 
+local function find_keymap(buf, mode, lhs)
+    for _, keymap in ipairs(vim.api.nvim_buf_get_keymap(buf, mode)) do
+        if keymap.lhs == lhs then
+            return keymap
+        end
+    end
+end
+
 local function wait_for_close(chat)
     assert(
         vim.wait(1000, function()
@@ -116,10 +124,17 @@ assert_equal(
     "resumed display auto-scroll stole input focus"
 )
 
+local insert_tab = find_keymap(chat.input.buf, "i", "<Tab>")
+assert_equal(
+    insert_tab and insert_tab.desc,
+    "Focus AI chat display",
+    "insert mode focus display key"
+)
+
 chat:focus_input()
-vim.api.nvim_feedkeys(vim.keycode("<C-k>"), "mx", false)
+vim.api.nvim_feedkeys(vim.keycode("<Tab>"), "mx", false)
 assert_equal(vim.api.nvim_get_current_win(), chat.display.win, "focus display key")
-vim.api.nvim_feedkeys(vim.keycode("<C-j>"), "mx", false)
+vim.api.nvim_feedkeys(vim.keycode("<Tab>"), "mx", false)
 assert_equal(vim.api.nvim_get_current_win(), chat.input.win, "focus input key")
 
 chat:focus_display()
@@ -201,11 +216,13 @@ end
 
 local empty_chat = create_chat()
 for _, win in ipairs({ empty_chat.display, empty_chat.input }) do
-    for _, keymap in ipairs(vim.api.nvim_buf_get_keymap(win.buf, "n")) do
-        assert(
-            not (keymap.desc or ""):find("Focus AI", 1, true),
-            "disabled chat keymap was applied"
-        )
+    for _, mode in ipairs({ "i", "n" }) do
+        for _, keymap in ipairs(vim.api.nvim_buf_get_keymap(win.buf, mode)) do
+            assert(
+                not (keymap.desc or ""):find("Focus AI", 1, true),
+                "disabled chat keymap was applied"
+            )
+        end
     end
 end
 empty_chat.input:execute("confirm")

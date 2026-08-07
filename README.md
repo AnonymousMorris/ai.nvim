@@ -36,13 +36,12 @@ With [lazy.nvim](https://github.com/folke/lazy.nvim), this is all you need to us
 | `<leader>ai` in visual mode | Open chat with the selection as context |
 | `<CR>` | Submit the prompt |
 | `<C-c>` | Clear the prompt, or stop the session when the prompt is empty |
-| `<C-k>` | Move from the input to the transcript |
-| `<C-j>` | Move from the transcript to the input |
+| `<Tab>` | Switch between the input and transcript in normal or insert mode |
 | `:AI` | Open or return to the current chat |
 | `:AISelection` | Add the visual selection to the chat input |
 | `:AIStop` | Stop Pi and delete the current session |
 
-Closing the chat window keeps the session alive. Run `:AI` to reopen it or `:AIStop` to end it.
+Switching to the input enters insert mode automatically. Closing the chat window keeps the session alive. Run `:AI` to reopen it or `:AIStop` to end it.
 
 Selection context is inserted with its file and line range. Context blocks are folded by default.
 
@@ -81,8 +80,9 @@ The expanded lazy.nvim configuration below shows the plugin's actual defaults. I
             "focus_display",
             desc = "Focus AI chat display",
           },
-          ["<C-k>"] = {
+          ["<Tab>"] = {
             "focus_display",
+            mode = { "i", "n" },
             desc = "Focus AI chat display",
           },
         },
@@ -95,7 +95,7 @@ The expanded lazy.nvim configuration below shows the plugin's actual defaults. I
             "focus_input",
             desc = "Focus AI chat input",
           },
-          ["<C-j>"] = {
+          ["<Tab>"] = {
             "focus_input",
             desc = "Focus AI chat input",
           },

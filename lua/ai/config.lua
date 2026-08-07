@@ -19,12 +19,16 @@ M.defaults = {
                 },
                 ["<C-w>k"] = { "focus_display", desc = "Focus AI chat display" },
                 ["<C-w><C-k>"] = { "focus_display", desc = "Focus AI chat display" },
-                ["<C-k>"] = { "focus_display", desc = "Focus AI chat display" },
+                ["<Tab>"] = {
+                    "focus_display",
+                    mode = { "i", "n" },
+                    desc = "Focus AI chat display",
+                },
             },
             display = {
                 ["<C-w>j"] = { "focus_input", desc = "Focus AI chat input" },
                 ["<C-w><C-j>"] = { "focus_input", desc = "Focus AI chat input" },
-                ["<C-j>"] = { "focus_input", desc = "Focus AI chat input" },
+                ["<Tab>"] = { "focus_input", desc = "Focus AI chat input" },
             },
         },
     },
