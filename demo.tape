@@ -6,6 +6,7 @@ Output "assets/demo.gif"
 Set Shell "bash"
 Set Width 1200
 Set Height 720
+Set Padding 0
 Set FontSize 18
 Set FontFamily "Hack Nerd Font Mono"
 Set Theme "Catppuccin Mocha"
@@ -27,4 +28,4 @@ Sleep 2s
 
 Type "What is this project doing?"
 Enter
-Sleep 20s
+Sleep 25s
