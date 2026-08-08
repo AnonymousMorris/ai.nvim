@@ -30,6 +30,33 @@ local function find_keymap(buf, mode, lhs)
     end
 end
 
+local function virtual_text(buf)
+    local text = {}
+    for _, extmark in ipairs(vim.api.nvim_buf_get_extmarks(
+        buf,
+        -1,
+        0,
+        -1,
+        { details = true }
+    )) do
+        for _, chunk in ipairs(extmark[4].virt_text or {}) do
+            text[#text + 1] = chunk[1]
+        end
+    end
+    return table.concat(text)
+end
+
+local function assert_contains(text, expected, message)
+    assert(
+        text:find(expected, 1, true),
+        ("%s: expected %s in %s"):format(
+            message,
+            vim.inspect(expected),
+            vim.inspect(text)
+        )
+    )
+end
+
 local function wait_for_close(chat)
     assert(
         vim.wait(1000, function()
@@ -78,6 +105,60 @@ Session.setup({})
 
 local chat = assert(Session.open_current({ backend = "chat-test" }))
 local session = assert(Session.get_current())
+assert(chat.hints, "default chat hints were not created")
+assert(chat.hints:win_valid(), "chat hints window is invalid")
+assert_equal(
+    vim.api.nvim_win_get_height(chat.hints.win),
+    1,
+    "chat hints height"
+)
+assert_equal(
+    vim.api.nvim_win_get_config(chat.hints.win).focusable,
+    false,
+    "chat hints focusable"
+)
+assert_equal(chat.display.opts.border, "rounded", "chat display border")
+assert_equal(chat.display.opts.title, " AI ", "chat display title")
+assert_equal(chat.input.opts.border, "rounded", "chat input border")
+assert(
+    not chat.layout.root:has_border(),
+    "layout root visually enclosed the chat windows"
+)
+assert_equal(chat.layout.root.opts.backdrop, false, "layout root backdrop")
+assert_equal(
+    chat.layout.root.opts.wo.winhighlight,
+    "Normal:Normal,NormalNC:Normal",
+    "layout root background"
+)
+assert_equal(chat.layout.root.opts.wo.winblend, 100, "layout root blend")
+assert_equal(vim.wo[chat.layout.root.win].winblend, 100, "layout root window blend")
+assert_equal(
+    chat.hints.opts.wo.winhighlight,
+    "Normal:Normal,NormalNC:Normal",
+    "chat hints background"
+)
+assert_equal(
+    chat.layout.box_wins[2],
+    nil,
+    "chat windows retained a shared layout container"
+)
+local display_config = vim.api.nvim_win_get_config(chat.display.win)
+local input_config = vim.api.nvim_win_get_config(chat.input.win)
+local hints_config = vim.api.nvim_win_get_config(chat.hints.win)
+assert_equal(
+    input_config.row,
+    display_config.row + vim.api.nvim_win_get_height(chat.display.win) + 2,
+    "chat input position below the independent display window"
+)
+assert_equal(
+    hints_config.row,
+    input_config.row + vim.api.nvim_win_get_height(chat.input.win) + 2,
+    "chat hints position below the independent input window"
+)
+local input_hints = virtual_text(chat.hints.buf)
+assert_contains(input_hints, "⏎ send", "input submit hint")
+assert_contains(input_hints, "C-c clear/stop", "input interrupt hint")
+assert_contains(input_hints, "Tab switch", "input focus hint")
 assert_equal(chat.display.buf, session.display_buf, "display window buffer")
 assert(
     chat.display.begin_turn == nil
@@ -99,7 +180,14 @@ assert_equal(
     "display auto-scroll stole input focus"
 )
 
-chat:focus_display()
+vim.cmd.stopinsert()
+vim.api.nvim_set_current_win(chat.display.win)
+local display_hints = virtual_text(chat.hints.buf)
+assert_contains(display_hints, "Tab input", "display WinEnter hint")
+assert(
+    not display_hints:find("send", 1, true),
+    "display hints retained input actions"
+)
 vim.api.nvim_win_set_cursor(chat.display.win, { 50, 0 })
 vim.cmd("normal! zz")
 append_display_line(session.display_buf, "line 101")
@@ -199,7 +287,80 @@ final_chat:close()
 wait_for_close(final_chat)
 assert_equal(session.chat, nil, "session chat after final close")
 
-Chat.setup({ keys = false })
+Chat.setup({
+    hints = {
+        input = {
+            { key = "X", label = "switch" },
+        },
+        display = {
+            { key = "Y", label = "input" },
+        },
+    },
+    keys = {
+        input = {
+            ["<Tab>"] = false,
+            ["<C-w>k"] = false,
+            ["<C-w><C-k>"] = false,
+            x = {
+                "focus_display",
+                mode = { "i", "n" },
+                desc = "Focus AI chat display",
+            },
+        },
+        display = {
+            ["<Tab>"] = false,
+            ["<C-w>j"] = false,
+            ["<C-w><C-j>"] = false,
+            y = { "focus_input", desc = "Focus AI chat input" },
+        },
+    },
+})
+
+local remapped_chat = Chat.new(
+    vim.api.nvim_create_buf(false, true),
+    vim.api.nvim_create_buf(false, true),
+    {
+        on_submit = function() end,
+        on_stop = function() end,
+    }
+)
+local remapped_input_hints = virtual_text(remapped_chat.hints.buf)
+assert_contains(remapped_input_hints, "X switch", "configured input hint")
+assert(
+    not remapped_input_hints:find("Tab switch", 1, true),
+    "configured input hint retained the default key"
+)
+assert(
+    not remapped_input_hints:find("clear/stop", 1, true),
+    "disabled input hint was rendered"
+)
+remapped_chat:set_hint_context("display")
+assert_contains(
+    virtual_text(remapped_chat.hints.buf),
+    "Y input",
+    "explicit display hint context"
+)
+local updated_invalid_context, invalid_context_error = pcall(
+    remapped_chat.set_hint_context,
+    remapped_chat,
+    "invalid"
+)
+assert(not updated_invalid_context, "invalid hint context was accepted")
+assert_contains(
+    invalid_context_error,
+    "invalid hint context",
+    "invalid hint context error"
+)
+remapped_chat:focus_display()
+assert_contains(
+    virtual_text(remapped_chat.hints.buf),
+    "Y input",
+    "configured display hint"
+)
+remapped_chat:close()
+wait_for_close(remapped_chat)
+
+Chat.setup({ keys = false, show_hints = false })
 
 local submissions = {}
 local function create_chat()
@@ -215,6 +376,17 @@ local function create_chat()
 end
 
 local empty_chat = create_chat()
+assert_equal(empty_chat.hints, nil, "disabled chat hints")
+local updated_disabled_hints, disabled_hints_error = pcall(
+    empty_chat.render_hints,
+    empty_chat
+)
+assert(not updated_disabled_hints, "disabled chat hints accepted an update")
+assert_contains(
+    disabled_hints_error,
+    "chat hints are disabled",
+    "disabled chat hints update error"
+)
 for _, win in ipairs({ empty_chat.display, empty_chat.input }) do
     for _, mode in ipairs({ "i", "n" }) do
         for _, keymap in ipairs(vim.api.nvim_buf_get_keymap(win.buf, mode)) do

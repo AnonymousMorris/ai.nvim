@@ -10,6 +10,17 @@ M.defaults = {
     show_status = true,
     close_delay = 1000,
     chat = {
+        show_hints = true,
+        hints = {
+            input = {
+                { key = "⏎", label = "send" },
+                { key = "C-c", label = "clear/stop" },
+                { key = "Tab", label = "switch" },
+            },
+            display = {
+                { key = "Tab", label = "input" },
+            },
+        },
         keys = {
             input = {
                 ["<C-c>"] = {

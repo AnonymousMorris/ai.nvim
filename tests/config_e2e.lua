@@ -27,7 +27,28 @@ assert_equal(config.extensions, true, "default extensions")
 assert_equal(config.skills, false, "default skills")
 assert_equal(config.auto_close, true, "default auto close")
 assert_equal(config.model, "test-model", "overridden model")
-assert_equal(config.chat, { keys = false }, "overridden chat config")
+assert_equal(config.chat.keys, false, "overridden chat keys")
+assert_equal(config.chat.show_hints, true, "default chat hints visibility")
+assert_equal(config.chat.hints, Config.defaults.chat.hints, "default chat hints")
+assert_equal(
+    Config.resolve({ chat = { show_hints = false } }).chat.show_hints,
+    false,
+    "disabled chat hints"
+)
+assert_equal(config.chat.hints.input[1].key, "⏎", "default chat hint key")
+local custom_hints = Config.resolve({
+    chat = {
+        hints = {
+            input = {
+                { key = "x", label = "display" },
+            },
+        },
+    },
+}).chat.hints
+assert_equal(#custom_hints.input, 1, "replaced input hint count")
+assert_equal(custom_hints.input[1].key, "x", "custom chat hint key")
+assert_equal(custom_hints.input[1].label, "display", "custom chat hint label")
+assert_equal(custom_hints.display[1].key, "Tab", "preserved display hints")
 assert_equal(
     Config.defaults.chat.keys.input["<Tab>"][1],
     "focus_display",

@@ -3,10 +3,17 @@ local M = {}
 local Snacks = require("snacks")
 local Config = require("ai.config")
 local Display = require("ai.ui.display")
+local Hints = require("ai.ui.hints")
 local Input = require("ai.ui.input")
+
+local config = vim.deepcopy(Config.defaults.chat)
+
+---@alias ai.ui.HintContext "input"|"display"
 
 ---@class ai.ui.Chat
 ---@field display ai.ui.Display
+---@field hint_context ai.ui.HintContext
+---@field hints? snacks.win
 ---@field input ai.ui.Input
 ---@field layout snacks.layout
 ---@field input_height? integer
@@ -24,6 +31,25 @@ end
 function Chat:focus_input()
     self.input:focus()
     vim.cmd.startinsert()
+end
+
+---Renders the hint bar for the current chat context.
+function Chat:render_hints()
+    local hint_win = assert(self.hints, "chat hints are disabled")
+    assert(hint_win:win_valid(), "chat hints window is invalid")
+    Hints.update(hint_win, config.hints[self.hint_context])
+end
+
+---Changes the chat hint context and renders it.
+---@param context ai.ui.HintContext
+function Chat:set_hint_context(context)
+    assert(
+        context == "input" or context == "display",
+        "invalid hint context: " .. tostring(context)
+    )
+
+    self.hint_context = context
+    self:render_hints()
 end
 
 ---Resizes the layout when the input's rendered height changes.
@@ -57,8 +83,6 @@ function Chat:close()
     end
 end
 
-local config = vim.deepcopy(Config.defaults.chat)
-
 ---Merges and validates chat-specific configuration.
 function M.setup(opts)
     config = Snacks.config.merge(
@@ -69,7 +93,10 @@ function M.setup(opts)
         config.keys = {}
     end
     assert(type(config.keys) == "table", "keys must be a table or false")
+    assert(type(config.show_hints) == "boolean", "show_hints must be boolean")
+    assert(type(config.hints) == "table", "hints must be a table")
     for _, name in ipairs({ "display", "input" }) do
+        assert(type(config.hints[name]) == "table", name .. " hints must be a table")
         if config.keys[name] == false then
             config.keys[name] = {}
         end
@@ -91,6 +118,7 @@ end
 ---@return ai.ui.Chat
 function M.new(display_buf, input_buf, opts)
     local chat = setmetatable({
+        hint_context = "input",
         on_close = opts.on_close,
     }, Chat)
     -- Gives either child window a shared layout-close action.
@@ -141,28 +169,50 @@ function M.new(display_buf, input_buf, opts)
         chat:update_input_layout()
     end
 
-    chat.layout = Snacks.layout.new({
-        show = false,
-        wins = {
-            display = chat.display,
-            input = chat.input,
+    local wins = {
+        display = chat.display,
+        input = chat.input,
+    }
+    local layout = {
+        box = "vertical",
+        width = 0.8,
+        height = 0.8,
+        backdrop = false,
+        wo = {
+            winblend = 100,
+            winhighlight = "Normal:Normal,NormalNC:Normal",
         },
-        layout = {
-            box = "vertical",
-            width = 0.8,
-            height = 0.8,
+        {
+            win = "display",
             border = "rounded",
             title = " AI ",
-            { win = "display", border = "none" },
-            {
-                win = "input",
-                -- Recomputes layout height from the rendered input.
-                height = function()
-                    return Input.height(chat.input)
-                end,
-                border = "top",
-            },
         },
+        {
+            win = "input",
+            -- Recomputes layout height from the rendered input.
+            height = function()
+                return Input.height(chat.input)
+            end,
+            border = "rounded",
+        },
+    }
+    if config.show_hints then
+        chat.hints = Hints.new()
+        wins.hints = chat.hints
+        layout[#layout + 1] = {
+            win = "hints",
+            height = 1,
+            border = "none",
+        }
+    end
+
+    chat.layout = Snacks.layout.new({
+        show = false,
+        wins = wins,
+        layout = layout,
+        on_update = chat.hints and function()
+            chat:render_hints()
+        end or nil,
     })
 
     chat.layout:show()
@@ -189,6 +239,19 @@ function M.new(display_buf, input_buf, opts)
     }, function()
         chat:update_input_layout()
     end, { buf = true })
+
+    if chat.hints then
+        chat.display:on("WinEnter", function()
+            if not chat.layout.closed then
+                chat:set_hint_context("display")
+            end
+        end, { buf = true })
+        chat.input:on("WinEnter", function()
+            if not chat.layout.closed then
+                chat:set_hint_context("input")
+            end
+        end, { buf = true })
+    end
 
     -- Every fresh UI starts at the newest transcript output and input.
     vim.api.nvim_win_call(chat.display.win, function()

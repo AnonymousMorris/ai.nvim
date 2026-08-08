@@ -41,7 +41,7 @@ With [lazy.nvim](https://github.com/folke/lazy.nvim), this is all you need to us
 | `:AISelection` | Add the visual selection to the chat input |
 | `:AIStop` | Stop Pi and delete the current session |
 
-Switching to the input enters insert mode automatically. Closing the chat window keeps the session alive. Run `:AI` to reopen it or `:AIStop` to end it.
+Switching to the input enters insert mode automatically. The transcript and input use separate rounded windows, with a configurable contextual hint bar below them. Closing the chat window keeps the session alive. Run `:AI` to reopen it or `:AIStop` to end it.
 
 Selection context is inserted with its file and line range. Context blocks are folded by default.
 
@@ -65,6 +65,17 @@ The expanded lazy.nvim configuration below shows the plugin's actual defaults. I
     show_status = true,
     close_delay = 1000,
     chat = {
+      show_hints = true,
+      hints = {
+        input = {
+          { key = "⏎", label = "send" },
+          { key = "C-c", label = "clear/stop" },
+          { key = "Tab", label = "switch" },
+        },
+        display = {
+          { key = "Tab", label = "input" },
+        },
+      },
       keys = {
         input = {
           ["<C-c>"] = {
@@ -112,7 +123,7 @@ Without lazy.nvim, pass the contents of `opts` above to `require("ai").setup()`.
 
 Pi runs in RPC mode with session persistence disabled. Extensions are enabled by default, while skills are disabled unless explicitly enabled.
 
-Set `chat.keys = false` to disable all chat-specific keymaps, or set `chat.keys.input` or `chat.keys.display` to `false` to disable one group.
+Set `chat.show_hints = false` to hide the contextual hint bar. The `chat.hints.input` and `chat.hints.display` lists are rendered exactly in their configured order. Set `chat.keys = false` to disable all chat-specific keymaps, or set `chat.keys.input` or `chat.keys.display` to `false` to disable one group.
 
 ## Tests
 
