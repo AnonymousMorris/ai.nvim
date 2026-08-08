@@ -131,6 +131,7 @@ function Session:show()
     end
 
     self.chat = Chat.new(self.display_buf, self.input_buf, {
+        backend_name = self.ai.backend_name,
         on_submit = function(value)
             self:submit(value)
         end,

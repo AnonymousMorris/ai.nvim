@@ -118,8 +118,19 @@ assert_equal(
     "chat hints focusable"
 )
 assert_equal(chat.display.opts.border, "rounded", "chat display border")
-assert_equal(chat.display.opts.title, " AI ", "chat display title")
+assert_equal(chat.display.opts.title, " chat-test ", "chat display title")
+assert_equal(
+    vim.api.nvim_win_get_config(chat.display.win).title[1][1],
+    " chat-test ",
+    "rendered chat display title"
+)
 assert_equal(chat.input.opts.border, "rounded", "chat input border")
+assert_equal(chat.input.opts.title, " Prompt ", "chat input title")
+assert_equal(
+    vim.api.nvim_win_get_config(chat.input.win).title[1][1],
+    " Prompt ",
+    "rendered chat input title"
+)
 assert(
     not chat.layout.root:has_border(),
     "layout root visually enclosed the chat windows"
@@ -320,9 +331,15 @@ local remapped_chat = Chat.new(
     vim.api.nvim_create_buf(false, true),
     vim.api.nvim_create_buf(false, true),
     {
+        backend_name = "remapped-test",
         on_submit = function() end,
         on_stop = function() end,
     }
+)
+assert_equal(
+    remapped_chat.display.opts.title,
+    " remapped-test ",
+    "explicit backend display title"
 )
 local remapped_input_hints = virtual_text(remapped_chat.hints.buf)
 assert_contains(remapped_input_hints, "X switch", "configured input hint")
@@ -368,6 +385,7 @@ local function create_chat()
         vim.api.nvim_create_buf(false, true),
         vim.api.nvim_create_buf(false, true),
         {
+            backend_name = "empty-test",
             on_submit = function(value)
                 submissions[#submissions + 1] = value
             end,

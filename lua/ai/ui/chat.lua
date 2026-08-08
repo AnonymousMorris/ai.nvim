@@ -107,6 +107,7 @@ function M.setup(opts)
 end
 
 ---@class ai.ui.ChatOpts
+---@field backend_name string
 ---@field on_submit fun(value: string)
 ---@field on_stop fun()
 ---@field on_close? fun(chat: ai.ui.Chat)
@@ -117,6 +118,11 @@ end
 ---@param opts ai.ui.ChatOpts
 ---@return ai.ui.Chat
 function M.new(display_buf, input_buf, opts)
+    assert(
+        type(opts.backend_name) == "string" and opts.backend_name ~= "",
+        "AI backend name is required"
+    )
+
     local chat = setmetatable({
         hint_context = "input",
         on_close = opts.on_close,
@@ -185,7 +191,7 @@ function M.new(display_buf, input_buf, opts)
         {
             win = "display",
             border = "rounded",
-            title = " AI ",
+            title = " " .. opts.backend_name .. " ",
         },
         {
             win = "input",
@@ -194,6 +200,7 @@ function M.new(display_buf, input_buf, opts)
                 return Input.height(chat.input)
             end,
             border = "rounded",
+            title = " Prompt ",
         },
     }
     if config.show_hints then
