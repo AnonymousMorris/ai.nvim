@@ -48,12 +48,20 @@ local CommandTestBackend = {}
 CommandTestBackend.__index = CommandTestBackend
 
 local backend
-function CommandTestBackend.start()
-    backend = setmetatable({}, CommandTestBackend)
+function CommandTestBackend.start(_, dispatch)
+    backend = setmetatable({ dispatch = dispatch }, CommandTestBackend)
     return backend
 end
 
-function CommandTestBackend:send()
+function CommandTestBackend:send(event)
+    self.dispatch(event)
+    self.dispatch({ type = "ai", action = "thinking" })
+    return true
+end
+
+function CommandTestBackend:interrupt()
+    self.interrupts = (self.interrupts or 0) + 1
+    self.dispatch({ type = "ai", action = "done" })
     return true
 end
 
@@ -116,6 +124,8 @@ local ctrl_c_chat = assert(
 local ctrl_c_backend = backend
 local ctrl_c_display_buf = ctrl_c_session.display_buf
 local ctrl_c_input_buf = ctrl_c_session.input_buf
+assert(ctrl_c_session:submit("active turn"))
+assert(ctrl_c_session.ai.status == "thinking", "Control-C turn was not active")
 vim.api.nvim_buf_set_lines(ctrl_c_input_buf, 0, -1, false, {
     "draft prompt",
 })
@@ -123,47 +133,31 @@ ctrl_c_chat.input:focus()
 vim.cmd("startinsert")
 vim.api.nvim_feedkeys(vim.keycode("<C-c>"), "xt", false)
 
+assert(ctrl_c_backend.interrupts == 1, "Control-C did not interrupt the turn")
 assert(
     vim.deep_equal(
         vim.api.nvim_buf_get_lines(ctrl_c_input_buf, 0, -1, false),
-        { "" }
+        { "draft prompt" }
     ),
-    "first Control-C did not clear the input"
+    "Control-C changed the input draft"
 )
 assert(
     Session.get_current() == ctrl_c_session,
-    "first Control-C stopped the session"
+    "Control-C replaced the current session"
 )
-assert(not ctrl_c_backend.cancelled, "first Control-C cancelled the backend")
-assert(ctrl_c_chat.layout:valid(), "first Control-C closed the chat")
+assert(not ctrl_c_session.destroyed, "Control-C destroyed the session")
+assert(not ctrl_c_backend.cancelled, "Control-C cancelled the backend process")
+assert(ctrl_c_session.ai.status == "idle", "interrupted turn did not settle")
+assert(vim.api.nvim_buf_is_valid(ctrl_c_display_buf), "Control-C deleted display buffer")
+assert(vim.api.nvim_buf_is_valid(ctrl_c_input_buf), "Control-C deleted input buffer")
+assert(ctrl_c_chat.layout:valid(), "Control-C closed the chat")
 assert(
     vim.api.nvim_get_current_win() == ctrl_c_chat.input.win,
-    "first Control-C moved input focus"
+    "Control-C moved input focus"
 )
 
-vim.api.nvim_feedkeys(vim.keycode("<C-c>"), "xt", false)
-assert(
-    vim.wait(1000, function()
-        return ctrl_c_session.destroyed
-    end),
-    "second Control-C did not stop the session"
-)
-assert(Session.get_current() == nil, "second Control-C retained the session")
-assert(ctrl_c_backend.cancelled, "second Control-C did not cancel the backend")
-assert(
-    not vim.api.nvim_buf_is_valid(ctrl_c_display_buf),
-    "second Control-C retained the display buffer"
-)
-assert(
-    not vim.api.nvim_buf_is_valid(ctrl_c_input_buf),
-    "second Control-C retained the input buffer"
-)
-assert(
-    vim.wait(1000, function()
-        return not ctrl_c_chat.layout:valid()
-    end),
-    "second Control-C did not close the chat"
-)
+vim.cmd("AIStop")
+assert(ctrl_c_session.destroyed, "AIStop did not clean up interrupted session")
 
 print("Plugin command E2E checks passed")
 vim.cmd("qa!")

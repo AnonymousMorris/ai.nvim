@@ -92,6 +92,11 @@ function ChatTestBackend:send()
     return true
 end
 
+function ChatTestBackend:interrupt()
+    self.interrupted = true
+    return true
+end
+
 function ChatTestBackend:finish()
     return true
 end
@@ -168,7 +173,7 @@ assert_equal(
 )
 local input_hints = virtual_text(chat.hints.buf)
 assert_contains(input_hints, "⏎ send", "input submit hint")
-assert_contains(input_hints, "C-c clear/stop", "input interrupt hint")
+assert_contains(input_hints, "C-c interrupt", "input interrupt hint")
 assert_contains(input_hints, "Tab switch", "input focus hint")
 assert_equal(chat.display.buf, session.display_buf, "display window buffer")
 assert(
@@ -333,7 +338,7 @@ local remapped_chat = Chat.new(
     {
         backend_name = "remapped-test",
         on_submit = function() end,
-        on_stop = function() end,
+        on_interrupt = function() end,
     }
 )
 assert_equal(
@@ -348,7 +353,7 @@ assert(
     "configured input hint retained the default key"
 )
 assert(
-    not remapped_input_hints:find("clear/stop", 1, true),
+    not remapped_input_hints:find("interrupt", 1, true),
     "disabled input hint was rendered"
 )
 remapped_chat:set_hint_context("display")
@@ -389,6 +394,7 @@ local function create_chat()
             on_submit = function(value)
                 submissions[#submissions + 1] = value
             end,
+            on_interrupt = function() end,
         }
     )
 end

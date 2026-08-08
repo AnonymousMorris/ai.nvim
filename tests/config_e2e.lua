@@ -36,6 +36,11 @@ assert_equal(
     "disabled chat hints"
 )
 assert_equal(config.chat.hints.input[1].key, "⏎", "default chat hint key")
+assert_equal(
+    config.chat.hints.input[2].label,
+    "interrupt",
+    "default interrupt hint"
+)
 local custom_hints = Config.resolve({
     chat = {
         hints = {
@@ -49,6 +54,11 @@ assert_equal(#custom_hints.input, 1, "replaced input hint count")
 assert_equal(custom_hints.input[1].key, "x", "custom chat hint key")
 assert_equal(custom_hints.input[1].label, "display", "custom chat hint label")
 assert_equal(custom_hints.display[1].key, "Tab", "preserved display hints")
+assert_equal(
+    Config.defaults.chat.keys.input["<C-c>"][1],
+    "interrupt",
+    "default input interrupt key"
+)
 assert_equal(
     Config.defaults.chat.keys.input["<Tab>"][1],
     "focus_display",

@@ -12,6 +12,7 @@ local EventType = Events.Type
 ---Accepted user events must be dispatched exactly once by the backend.
 ---@field start fun(opts: table, dispatch: ai.Dispatcher): ai.Backend?, any?
 ---@field send fun(self: ai.Backend, event: ai.UserEvent): boolean?, any?
+---@field interrupt fun(self: ai.Backend): boolean?, any?
 ---@field finish fun(self: ai.Backend): boolean?, any?
 ---@field cancel fun(self: ai.Backend)
 
@@ -25,7 +26,7 @@ local config = Config.backend()
 function M.register_backend(name, backend)
     assert(type(name) == "string" and name ~= "", "backend name is required")
     assert(type(backend) == "table", "backend must be a table")
-    for _, method in ipairs({ "start", "send", "finish", "cancel" }) do
+    for _, method in ipairs({ "start", "send", "interrupt", "finish", "cancel" }) do
         assert(
             type(backend[method]) == "function",
             ("backend must implement %s()"):format(method)
@@ -111,6 +112,21 @@ function AI:send(message)
     }
     self.error = nil
     local called, ok, err = pcall(self.backend.send, self.backend, event)
+    if not called then
+        err = ok
+        ok = nil
+    end
+    if not ok then
+        self:handle_error(err)
+    end
+    return ok, err
+end
+
+---Interrupts the current backend turn without ending the AI session.
+---@return boolean? success
+---@return any? error
+function AI:interrupt()
+    local called, ok, err = pcall(self.backend.interrupt, self.backend)
     if not called then
         err = ok
         ok = nil

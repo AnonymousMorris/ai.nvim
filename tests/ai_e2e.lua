@@ -214,6 +214,15 @@ function FakeBackend:send(event)
     return true
 end
 
+function FakeBackend:interrupt()
+    self.interrupted = true
+    self.dispatch({
+        type = EventType.AI,
+        action = AIAction.DONE,
+    })
+    return true
+end
+
 function FakeBackend:finish()
     self.finished = true
     return true
@@ -244,6 +253,9 @@ assert_equal(fake_backend.events, {
         content = "backend-neutral message",
     },
 }, "custom backend user event")
+assert(fake_ai:interrupt())
+assert_equal(fake_backend.interrupted, true, "backend-neutral interrupt")
+assert_equal(fake_ai.status, "idle", "status after backend-neutral interrupt")
 local backend_notification
 local original_notify = vim.notify
 vim.notify = function(message, level)

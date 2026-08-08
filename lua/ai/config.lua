@@ -14,7 +14,7 @@ M.defaults = {
         hints = {
             input = {
                 { key = "⏎", label = "send" },
-                { key = "C-c", label = "clear/stop" },
+                { key = "C-c", label = "interrupt" },
                 { key = "Tab", label = "switch" },
             },
             display = {
@@ -24,9 +24,9 @@ M.defaults = {
         keys = {
             input = {
                 ["<C-c>"] = {
-                    "clear_or_stop",
+                    "interrupt",
                     mode = { "i", "n" },
-                    desc = "Clear input or stop AI agent",
+                    desc = "Interrupt current AI turn",
                 },
                 ["<C-w>k"] = { "focus_display", desc = "Focus AI chat display" },
                 ["<C-w><C-k>"] = { "focus_display", desc = "Focus AI chat display" },

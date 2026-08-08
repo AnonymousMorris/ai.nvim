@@ -59,6 +59,11 @@ function SubmitTestBackend:send(event)
     return true
 end
 
+function SubmitTestBackend:interrupt()
+    self.interrupted = true
+    return true
+end
+
 function SubmitTestBackend:finish()
     return true
 end

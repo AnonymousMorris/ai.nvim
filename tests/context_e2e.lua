@@ -50,6 +50,11 @@ function ContextTestBackend:send(event)
     return true
 end
 
+function ContextTestBackend:interrupt()
+    self.interrupted = true
+    return true
+end
+
 function ContextTestBackend:finish()
     return true
 end

@@ -135,14 +135,8 @@ function Session:show()
         on_submit = function(value)
             self:submit(value)
         end,
-        on_stop = function()
-            local ok, err = self:destroy()
-            if not ok then
-                vim.notify(
-                    "Failed to stop AI session: " .. tostring(err),
-                    vim.log.levels.ERROR
-                )
-            end
+        on_interrupt = function()
+            self:interrupt()
         end,
         on_close = function()
             self.chat = nil
@@ -158,6 +152,14 @@ end
 function Session:submit(value)
     assert_active(self)
     return self.ai:send(value)
+end
+
+---Interrupts the current AI turn without ending the session.
+---@return boolean? success
+---@return any? error
+function Session:interrupt()
+    assert_active(self)
+    return self.ai:interrupt()
 end
 
 ---Closes the chat window without ending the AI session.

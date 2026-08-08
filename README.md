@@ -35,11 +35,11 @@ With [lazy.nvim](https://github.com/folke/lazy.nvim), this is all you need to us
 | `<leader>ai` | Open or return to the current chat |
 | `<leader>ai` in visual mode | Open chat with the selection as context |
 | `<CR>` | Submit the prompt |
-| `<C-c>` | Clear the prompt, or stop the session when the prompt is empty |
+| `<C-c>` | Interrupt the current AI turn |
 | `<Tab>` | Switch between the input and transcript in normal or insert mode |
 | `:AI` | Open or return to the current chat |
 | `:AISelection` | Add the visual selection to the chat input |
-| `:AIStop` | Stop Pi and delete the current session |
+| `:AIStop` | Stop the agent and delete the current session |
 
 Switching to the input enters insert mode automatically. The transcript and input use separate rounded windows, with a configurable contextual hint bar below them. Closing the chat window keeps the session alive. Run `:AI` to reopen it or `:AIStop` to end it.
 
@@ -69,7 +69,7 @@ The expanded lazy.nvim configuration below shows the plugin's actual defaults. I
       hints = {
         input = {
           { key = "⏎", label = "send" },
-          { key = "C-c", label = "clear/stop" },
+          { key = "C-c", label = "interrupt" },
           { key = "Tab", label = "switch" },
         },
         display = {
@@ -79,9 +79,9 @@ The expanded lazy.nvim configuration below shows the plugin's actual defaults. I
       keys = {
         input = {
           ["<C-c>"] = {
-            "clear_or_stop",
+            "interrupt",
             mode = { "i", "n" },
-            desc = "Clear input or stop AI agent",
+            desc = "Interrupt current AI turn",
           },
           ["<C-w>k"] = {
             "focus_display",

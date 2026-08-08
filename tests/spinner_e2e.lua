@@ -48,6 +48,14 @@ function SpinnerTestBackend:send(event)
     return true
 end
 
+function SpinnerTestBackend:interrupt()
+    self.dispatch({
+        type = EventType.AI,
+        action = AIAction.DONE,
+    })
+    return true
+end
+
 function SpinnerTestBackend:finish()
     return true
 end
@@ -156,12 +164,11 @@ assert(
     "thinking status was not rendered after agent text"
 )
 
-fake_backend.dispatch({
-    type = EventType.AI,
-    action = AIAction.DONE,
-})
-assert_equal(transcript.role, nil, "role after completion")
-assert_equal(ai.status, "idle", "AI status after completion")
+assert(ai:interrupt())
+assert_equal(transcript.role, nil, "role after interruption")
+assert_equal(ai.status, "idle", "AI status after interruption")
+assert_equal(session.destroyed, false, "interrupt destroyed the session")
+assert_equal(fake_backend.cancelled, nil, "interrupt cancelled the backend")
 assert_equal(
     vim.api.nvim_buf_get_lines(session.display_buf, 0, -1, false),
     {

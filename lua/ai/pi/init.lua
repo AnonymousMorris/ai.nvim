@@ -225,6 +225,13 @@ function Pi:send(event)
     return ok, err
 end
 
+---Aborts Pi's current turn while keeping its RPC process alive.
+---@return boolean? success
+---@return any? error
+function Pi:interrupt()
+    return self:write(vim.json.encode({ type = "abort" }) .. "\n")
+end
+
 ---Closes Pi's input so the process can finish normally.
 ---@return boolean? success
 ---@return any? error
