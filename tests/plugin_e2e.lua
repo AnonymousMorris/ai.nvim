@@ -96,16 +96,65 @@ local chat = assert(session.chat, "AI did not open the chat")
 local display_buf = session.display_buf
 local input_buf = session.input_buf
 assert(Session.open_current() == chat, "AI command duplicated the open chat")
+assert(session:submit("old session"))
+assert(session.ai.status == "thinking", "Control-N test turn was not active")
+vim.api.nvim_buf_set_lines(input_buf, 0, -1, false, { "discarded draft" })
 
-vim.cmd("AIStop")
-assert(Session.get_current() == nil, "AIStop retained the current session")
-assert(session.destroyed, "AIStop did not destroy the session")
-assert(backend.cancelled, "AIStop did not cancel the backend")
-assert(not vim.api.nvim_buf_is_valid(display_buf), "AIStop retained the display buffer")
-assert(not vim.api.nvim_buf_is_valid(input_buf), "AIStop retained the input buffer")
+local previous_backend = backend
+chat.input:focus()
+vim.cmd("startinsert")
+vim.api.nvim_feedkeys(vim.keycode("<C-n>"), "xt", false)
+
+assert(
+    vim.wait(1000, function()
+        return Session.get_current() ~= session
+    end),
+    "Control-N did not create a new session"
+)
+local new_session = assert(Session.get_current(), "Control-N removed the current session")
+local new_chat = assert(new_session.chat, "Control-N did not open the new chat")
+assert(session.destroyed, "Control-N did not destroy the previous session")
+assert(previous_backend.cancelled, "Control-N did not cancel the previous backend")
+assert(not vim.api.nvim_buf_is_valid(display_buf), "Control-N retained the old display buffer")
+assert(not vim.api.nvim_buf_is_valid(input_buf), "Control-N retained the old input buffer")
 assert(
     vim.wait(1000, function()
         return not chat.layout:valid()
+    end),
+    "Control-N did not close the previous chat"
+)
+assert(new_chat.layout:valid(), "Control-N did not show the new chat")
+assert(
+    vim.api.nvim_get_current_win() == new_chat.input.win,
+    "Control-N did not focus the new input"
+)
+assert(
+    vim.deep_equal(
+        vim.api.nvim_buf_get_lines(new_session.display_buf, 0, -1, false),
+        { "" }
+    ),
+    "Control-N retained the old transcript"
+)
+assert(
+    vim.deep_equal(
+        vim.api.nvim_buf_get_lines(new_session.input_buf, 0, -1, false),
+        { "" }
+    ),
+    "Control-N retained the old input"
+)
+
+local new_backend = backend
+local new_display_buf = new_session.display_buf
+local new_input_buf = new_session.input_buf
+vim.cmd("AIStop")
+assert(Session.get_current() == nil, "AIStop retained the current session")
+assert(new_session.destroyed, "AIStop did not destroy the session")
+assert(new_backend.cancelled, "AIStop did not cancel the backend")
+assert(not vim.api.nvim_buf_is_valid(new_display_buf), "AIStop retained the display buffer")
+assert(not vim.api.nvim_buf_is_valid(new_input_buf), "AIStop retained the input buffer")
+assert(
+    vim.wait(1000, function()
+        return not new_chat.layout:valid()
     end),
     "AIStop did not close the chat"
 )

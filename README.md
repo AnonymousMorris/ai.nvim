@@ -36,12 +36,13 @@ With [lazy.nvim](https://github.com/folke/lazy.nvim), this is all you need to us
 | `<leader>ai` in visual mode | Open chat with the selection as context |
 | `<CR>` | Submit the prompt |
 | `<C-c>` | Interrupt the current AI turn |
+| `<C-n>` | Replace the current chat with a new session |
 | `<Tab>` | Switch between the input and transcript in normal or insert mode |
 | `:AI` | Open or return to the current chat |
 | `:AISelection` | Add the visual selection to the chat input |
 | `:AIStop` | Stop the agent and delete the current session |
 
-Switching to the input enters insert mode automatically. The transcript and input use separate rounded windows, with a configurable contextual hint bar below them. Closing the chat window keeps the session alive. Run `:AI` to reopen it or `:AIStop` to end it.
+Switching to the input enters insert mode automatically. The transcript and input use separate rounded windows, with a configurable contextual hint bar below them. Press `<C-n>` from the input to stop the current agent and open a fresh session. Closing the chat window keeps the session alive. Run `:AI` to reopen it or `:AIStop` to end it.
 
 Selection context is inserted with its file and line range. Context blocks are folded by default.
 
@@ -70,6 +71,7 @@ The expanded lazy.nvim configuration below shows the plugin's actual defaults. I
         input = {
           { key = "⏎", label = "send" },
           { key = "C-c", label = "interrupt" },
+          { key = "C-n", label = "new" },
           { key = "Tab", label = "switch" },
         },
         display = {
@@ -82,6 +84,11 @@ The expanded lazy.nvim configuration below shows the plugin's actual defaults. I
             "interrupt",
             mode = { "i", "n" },
             desc = "Interrupt current AI turn",
+          },
+          ["<C-n>"] = {
+            "new_session",
+            mode = { "i", "n" },
+            desc = "Create a new AI session",
           },
           ["<C-w>k"] = {
             "focus_display",

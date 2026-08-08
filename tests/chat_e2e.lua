@@ -174,6 +174,7 @@ assert_equal(
 local input_hints = virtual_text(chat.hints.buf)
 assert_contains(input_hints, "⏎ send", "input submit hint")
 assert_contains(input_hints, "C-c interrupt", "input interrupt hint")
+assert_contains(input_hints, "C-n new", "new session hint")
 assert_contains(input_hints, "Tab switch", "input focus hint")
 assert_equal(chat.display.buf, session.display_buf, "display window buffer")
 assert(
@@ -234,6 +235,14 @@ assert_equal(
     "Focus AI chat display",
     "insert mode focus display key"
 )
+for _, mode in ipairs({ "i", "n" }) do
+    local new_session = find_keymap(chat.input.buf, mode, "<C-N>")
+    assert_equal(
+        new_session and new_session.desc,
+        "Create a new AI session",
+        mode .. " mode new session key"
+    )
+end
 
 chat:focus_input()
 vim.api.nvim_feedkeys(vim.keycode("<Tab>"), "mx", false)
@@ -339,6 +348,7 @@ local remapped_chat = Chat.new(
         backend_name = "remapped-test",
         on_submit = function() end,
         on_interrupt = function() end,
+        on_new_session = function() end,
     }
 )
 assert_equal(
@@ -395,6 +405,7 @@ local function create_chat()
                 submissions[#submissions + 1] = value
             end,
             on_interrupt = function() end,
+            on_new_session = function() end,
         }
     )
 end

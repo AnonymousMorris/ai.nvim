@@ -110,6 +110,7 @@ end
 ---@field backend_name string
 ---@field on_submit fun(value: string)
 ---@field on_interrupt fun()
+---@field on_new_session fun()
 ---@field on_close? fun(chat: ai.ui.Chat)
 
 ---Creates and shows a chat layout around the supplied buffers.
@@ -134,6 +135,11 @@ function M.new(display_buf, input_buf, opts)
     local actions = {
         interrupt = function()
             opts.on_interrupt()
+            return true
+        end,
+        new_session = function()
+            -- Avoid replacing the active window inside its key callback.
+            vim.schedule(opts.on_new_session)
             return true
         end,
         -- Exposes display focus to configured window keymaps.

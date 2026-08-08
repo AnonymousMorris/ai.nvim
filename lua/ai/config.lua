@@ -15,6 +15,7 @@ M.defaults = {
             input = {
                 { key = "⏎", label = "send" },
                 { key = "C-c", label = "interrupt" },
+                { key = "C-n", label = "new" },
                 { key = "Tab", label = "switch" },
             },
             display = {
@@ -27,6 +28,11 @@ M.defaults = {
                     "interrupt",
                     mode = { "i", "n" },
                     desc = "Interrupt current AI turn",
+                },
+                ["<C-n>"] = {
+                    "new_session",
+                    mode = { "i", "n" },
+                    desc = "Create a new AI session",
                 },
                 ["<C-w>k"] = { "focus_display", desc = "Focus AI chat display" },
                 ["<C-w><C-k>"] = { "focus_display", desc = "Focus AI chat display" },

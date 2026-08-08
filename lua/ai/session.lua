@@ -101,25 +101,33 @@ function Session.get_current()
     return current
 end
 
+---Creates, selects, and shows a new session.
+---@param opts? ai.StartOpts
+---@return ai.ui.Chat? chat
+---@return any? error
+function Session.open_new(opts)
+    local session, err = Session.new(opts)
+    if not session then
+        vim.notify(
+            "Failed to start AI backend: " .. tostring(err),
+            vim.log.levels.ERROR
+        )
+        return nil, err
+    end
+
+    return session:show()
+end
+
 ---Shows the current session, creating it when necessary.
 ---@param opts? ai.StartOpts
 ---@return ai.ui.Chat? chat
 ---@return any? error
 function Session.open_current(opts)
-    local session = current
-    if not session then
-        local err
-        session, err = Session.new(opts)
-        if not session then
-            vim.notify(
-                "Failed to start AI backend: " .. tostring(err),
-                vim.log.levels.ERROR
-            )
-            return nil, err
-        end
+    if not current then
+        return Session.open_new(opts)
     end
 
-    return session:show()
+    return current:show()
 end
 
 ---Opens or returns this session's chat view.
@@ -137,6 +145,9 @@ function Session:show()
         end,
         on_interrupt = function()
             self:interrupt()
+        end,
+        on_new_session = function()
+            Session.open_new()
         end,
         on_close = function()
             self.chat = nil

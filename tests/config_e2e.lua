@@ -60,6 +60,16 @@ assert_equal(
     "default input interrupt key"
 )
 assert_equal(
+    Config.defaults.chat.keys.input["<C-n>"][1],
+    "new_session",
+    "default input new session key"
+)
+assert_equal(
+    Config.defaults.chat.keys.input["<C-n>"].mode,
+    { "i", "n" },
+    "default input new session modes"
+)
+assert_equal(
     Config.defaults.chat.keys.input["<Tab>"][1],
     "focus_display",
     "default input Tab key"
@@ -100,7 +110,7 @@ config.chat.keys = {}
 assert_equal(
     vim.tbl_count(Config.defaults.chat.keys.input)
         + vim.tbl_count(Config.defaults.chat.keys.display),
-    7,
+    8,
     "resolved config does not mutate defaults"
 )
 
