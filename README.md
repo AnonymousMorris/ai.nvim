@@ -18,7 +18,7 @@ npm install -g @mariozechner/pi-coding-agent
 
 ## Installation
 
-With [lazy.nvim](https://github.com/folke/lazy.nvim), this is all you need to use the defaults:
+### Using [lazy.nvim](https://github.com/folke/lazy.nvim)
 
 ```lua
 {
@@ -28,21 +28,51 @@ With [lazy.nvim](https://github.com/folke/lazy.nvim), this is all you need to us
 }
 ```
 
+### Using [packer.nvim](https://github.com/wbthomason/packer.nvim)
+
+```lua
+use {
+  "AnonymousMorris/ai.nvim",
+  requires = { "folke/snacks.nvim" },
+  config = function()
+    require("ai").setup()
+  end,
+}
+```
+
+### Using [mini.deps](https://github.com/echasnovski/mini.nvim/blob/main/readmes/mini-deps.md)
+
+```lua
+MiniDeps.add({
+  source = "AnonymousMorris/ai.nvim",
+  depends = { "folke/snacks.nvim" },
+})
+require("ai").setup()
+```
+
+With another package manager, install both `ai.nvim` and `snacks.nvim`, then call `require("ai").setup()` after they are available on Neovim's runtime path.
+
+## Keymaps
+
+No global keymaps by default. You choose.
+
+```lua
+-- Open or return to the current chat
+vim.keymap.set("n", "<leader>ai", "<Cmd>AI<CR>", { desc = "Open AI chat" })
+
+-- Open chat with the visual selection as context
+vim.keymap.set("x", "<leader>ai", "<Cmd>AISelection<CR>", { desc = "Open AI chat with selection" })
+```
+
 ## Usage
 
-| Key or command | Action |
+| Command | Action |
 | --- | --- |
-| `<leader>ai` | Open or return to the current chat |
-| `<leader>ai` in visual mode | Open chat with the selection as context |
-| `<CR>` | Submit the prompt |
-| `<C-c>` | Interrupt the current AI turn |
-| `<C-n>` | Replace the current chat with a new session |
-| `<Tab>` | Switch between the input and transcript in normal or insert mode |
 | `:AI` | Open or return to the current chat |
 | `:AISelection` | Add the visual selection to the chat input |
 | `:AIStop` | Stop the agent and delete the current session |
 
-Switching to the input enters insert mode automatically. The transcript and input use separate rounded windows, with a configurable contextual hint bar below them. Press `<C-n>` from the input to stop the current agent and open a fresh session. Closing the chat window keeps the session alive. Run `:AI` to reopen it or `:AIStop` to end it.
+Switching to the input enters insert mode automatically. The transcript and input use separate rounded windows, with a configurable contextual hint bar below them. Closing the chat window keeps the session alive. Run `:AI` to reopen it or `:AIStop` to end it.
 
 Selection context is inserted with its file and line range. Context blocks are folded by default.
 

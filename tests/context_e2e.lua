@@ -65,6 +65,9 @@ end
 
 AI.register_backend("context-test", ContextTestBackend)
 Plugin.setup({ backend = "context-test" })
+vim.keymap.set("x", "<leader>ai", "<Cmd>AISelection<CR>", {
+    desc = "Open AI chat with selection",
+})
 
 local source_buf = vim.api.nvim_create_buf(true, false)
 local source_path = "tests/fixtures/context_source.lua"
@@ -96,7 +99,7 @@ for _, mapping in ipairs(vim.api.nvim_get_keymap("x")) do
         break
     end
 end
-assert(visual_mapping, "visual AI keymap was not registered")
+assert(visual_mapping, "user visual AI keymap was not registered")
 assert_equal(
     visual_mapping.rhs,
     "<Cmd>AISelection<CR>",

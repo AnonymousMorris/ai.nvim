@@ -76,19 +76,22 @@ end
 AI.register_backend("command-test", CommandTestBackend)
 Plugin.setup({ backend = "command-test" })
 
-local normal_mapping
-for _, mapping in ipairs(vim.api.nvim_get_keymap("n")) do
-    if mapping.lhs == "\\ai" then
-        normal_mapping = mapping
-        break
+local function find_global_mapping(mode, lhs)
+    for _, mapping in ipairs(vim.api.nvim_get_keymap(mode)) do
+        if mapping.lhs == lhs then
+            return mapping
+        end
     end
 end
-assert(normal_mapping, "normal AI keymap was not registered")
+
 assert(
-    normal_mapping.rhs == "<Cmd>AI<CR>",
-    "normal AI keymap did not execute :AI"
+    find_global_mapping("n", "\\ai") == nil,
+    "setup registered a default normal AI keymap"
 )
-assert(normal_mapping.callback == nil, "normal AI keymap retained a callback")
+assert(
+    find_global_mapping("x", "\\ai") == nil,
+    "setup registered a default visual AI keymap"
+)
 
 vim.cmd("AI")
 local session = assert(Session.get_current(), "AI did not create a session")
