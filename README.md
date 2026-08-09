@@ -24,9 +24,12 @@ npm install -g @mariozechner/pi-coding-agent
 {
   "AnonymousMorris/ai.nvim",
   dependencies = { "folke/snacks.nvim" },
+  event = "VeryLazy",
   opts = {},
 }
 ```
+
+`VeryLazy` loads the plugin automatically after Neovim finishes its initial startup work.
 
 ### Using [packer.nvim](https://github.com/wbthomason/packer.nvim)
 
@@ -86,6 +89,7 @@ The expanded lazy.nvim configuration below shows the plugin's actual defaults. I
 {
   "AnonymousMorris/ai.nvim",
   dependencies = { "folke/snacks.nvim" },
+  event = "VeryLazy",
   opts = {
     backend = "pi",
     binary = "pi",
