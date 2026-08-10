@@ -14,7 +14,7 @@ M.defaults = {
         hints = {
             input = {
                 { key = "⏎", label = "send" },
-                { key = "C-c", label = "interrupt" },
+                { key = "C-c", label = "clear/interrupt" },
                 { key = "C-n", label = "new" },
                 { key = "Tab", label = "switch" },
             },
@@ -25,9 +25,9 @@ M.defaults = {
         keys = {
             input = {
                 ["<C-c>"] = {
-                    "interrupt",
+                    "clear_or_interrupt",
                     mode = { "i", "n" },
-                    desc = "Interrupt current AI turn",
+                    desc = "Clear input or interrupt current AI turn",
                 },
                 ["<C-n>"] = {
                     "new_session",

@@ -185,14 +185,21 @@ ctrl_c_chat.input:focus()
 vim.cmd("startinsert")
 vim.api.nvim_feedkeys(vim.keycode("<C-c>"), "xt", false)
 
-assert(ctrl_c_backend.interrupts == 1, "Control-C did not interrupt the turn")
+assert(ctrl_c_backend.interrupts == nil, "input clear interrupted the turn")
 assert(
     vim.deep_equal(
         vim.api.nvim_buf_get_lines(ctrl_c_input_buf, 0, -1, false),
-        { "draft prompt" }
+        { "" }
     ),
-    "Control-C changed the input draft"
+    "first Control-C did not clear the input draft"
 )
+assert(
+    ctrl_c_session.ai.status == "thinking",
+    "input clear settled the active turn"
+)
+
+vim.api.nvim_feedkeys(vim.keycode("<C-c>"), "xt", false)
+assert(ctrl_c_backend.interrupts == 1, "second Control-C did not interrupt the turn")
 assert(
     Session.get_current() == ctrl_c_session,
     "Control-C replaced the current session"

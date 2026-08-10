@@ -333,5 +333,14 @@ assert_equal(
     "reclosed stacked selection folds"
 )
 
+stacked_chat:focus_input()
+vim.api.nvim_feedkeys(vim.keycode("<C-c>"), "xt", false)
+assert_equal(
+    vim.api.nvim_buf_get_lines(session.input_buf, 0, -1, false),
+    { "" },
+    "Control-C did not clear selection context"
+)
+assert_equal(backend.interrupted, nil, "selection clear interrupted the backend")
+
 print("Context E2E checks passed")
 vim.cmd("qa!")

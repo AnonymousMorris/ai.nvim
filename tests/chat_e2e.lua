@@ -173,7 +173,11 @@ assert_equal(
 )
 local input_hints = virtual_text(chat.hints.buf)
 assert_contains(input_hints, "⏎ send", "input submit hint")
-assert_contains(input_hints, "C-c interrupt", "input interrupt hint")
+assert_contains(
+    input_hints,
+    "C-c clear/interrupt",
+    "input clear or interrupt hint"
+)
 assert_contains(input_hints, "C-n new", "new session hint")
 assert_contains(input_hints, "Tab switch", "input focus hint")
 assert_equal(chat.display.buf, session.display_buf, "display window buffer")
@@ -363,7 +367,7 @@ assert(
     "configured input hint retained the default key"
 )
 assert(
-    not remapped_input_hints:find("interrupt", 1, true),
+    not remapped_input_hints:find("clear/interrupt", 1, true),
     "disabled input hint was rendered"
 )
 remapped_chat:set_hint_context("display")

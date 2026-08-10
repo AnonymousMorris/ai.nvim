@@ -137,6 +137,15 @@ function M.new(display_buf, input_buf, opts)
             opts.on_interrupt()
             return true
         end,
+        -- Clears a draft before allowing another interrupt to stop the turn.
+        clear_or_interrupt = function()
+            if chat.input:text() ~= "" then
+                Input.clear(chat.input)
+            else
+                opts.on_interrupt()
+            end
+            return true
+        end,
         new_session = function()
             -- Avoid replacing the active window inside its key callback.
             vim.schedule(opts.on_new_session)
