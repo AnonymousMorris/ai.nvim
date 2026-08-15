@@ -14,6 +14,7 @@ M.defaults = {
         hints = {
             input = {
                 { key = "⏎", label = "send" },
+                { key = "S-⏎", label = "newline" },
                 { key = "C-c", label = "clear/interrupt" },
                 { key = "C-n", label = "new" },
                 { key = "Tab", label = "switch" },
@@ -24,6 +25,16 @@ M.defaults = {
         },
         keys = {
             input = {
+                ["<M-CR>"] = {
+                    "insert_newline",
+                    mode = "i",
+                    desc = "Insert newline",
+                },
+                ["<S-CR>"] = {
+                    "insert_newline",
+                    mode = "i",
+                    desc = "Insert newline",
+                },
                 ["<C-c>"] = {
                     "clear_or_interrupt",
                     mode = { "i", "n" },

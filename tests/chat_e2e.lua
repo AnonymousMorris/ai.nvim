@@ -13,7 +13,7 @@ local Session = require("ai.session")
 
 local function assert_equal(actual, expected, message)
     assert(
-        actual == expected,
+        vim.deep_equal(actual, expected),
         ("%s: expected %s, got %s"):format(
             message,
             vim.inspect(expected),
@@ -88,7 +88,9 @@ function ChatTestBackend.start()
     return setmetatable({}, ChatTestBackend)
 end
 
-function ChatTestBackend:send()
+function ChatTestBackend:send(event)
+    self.sends = (self.sends or 0) + 1
+    self.last_event = event
     return true
 end
 
@@ -173,6 +175,7 @@ assert_equal(
 )
 local input_hints = virtual_text(chat.hints.buf)
 assert_contains(input_hints, "⏎ send", "input submit hint")
+assert_contains(input_hints, "S-⏎ newline", "input newline hint")
 assert_contains(
     input_hints,
     "C-c clear/interrupt",
@@ -239,6 +242,14 @@ assert_equal(
     "Focus AI chat display",
     "insert mode focus display key"
 )
+for _, key in ipairs({ "<M-CR>", "<S-CR>" }) do
+    local insert_newline = find_keymap(chat.input.buf, "i", key)
+    assert_equal(
+        insert_newline and insert_newline.desc,
+        "Insert newline",
+        "insert mode " .. key .. " key"
+    )
+end
 for _, mode in ipairs({ "i", "n" }) do
     local new_session = find_keymap(chat.input.buf, mode, "<C-N>")
     assert_equal(
@@ -253,6 +264,46 @@ vim.api.nvim_feedkeys(vim.keycode("<Tab>"), "mx", false)
 assert_equal(vim.api.nvim_get_current_win(), chat.display.win, "focus display key")
 vim.api.nvim_feedkeys(vim.keycode("<Tab>"), "mx", false)
 assert_equal(vim.api.nvim_get_current_win(), chat.input.win, "focus input key")
+
+vim.api.nvim_buf_set_lines(session.input_buf, 0, -1, false, { "first" })
+chat:focus_input()
+vim.cmd.stopinsert()
+vim.api.nvim_feedkeys(
+    vim.keycode("A<M-CR>x<C-\\><C-n>"),
+    "mx",
+    false
+)
+vim.wait(10)
+assert_equal(
+    vim.api.nvim_buf_get_lines(session.input_buf, 0, -1, false),
+    { "first", "x" },
+    "Shift-Enter newline followed by input"
+)
+assert_equal(session.ai.backend.sends, nil, "Shift-Enter submitted the prompt")
+assert(chat.layout:valid(), "Shift-Enter closed the chat")
+assert_equal(
+    vim.api.nvim_get_current_win(),
+    chat.input.win,
+    "Shift-Enter moved input focus"
+)
+
+chat:focus_display()
+vim.api.nvim_win_set_cursor(chat.display.win, { 50, 0 })
+vim.cmd("normal! zz")
+vim.api.nvim_buf_set_lines(session.input_buf, 0, -1, false, { "submit" })
+chat:focus_input()
+chat.input:execute("confirm")
+assert(
+    vim.wait(1000, function()
+        return vim.api.nvim_get_current_win() == chat.display.win
+    end),
+    "submission did not focus the display"
+)
+assert_equal(
+    vim.api.nvim_win_get_cursor(chat.display.win)[1],
+    102,
+    "submission did not scroll the display to the bottom"
+)
 
 chat:focus_display()
 vim.api.nvim_win_set_cursor(chat.display.win, { 50, 0 })

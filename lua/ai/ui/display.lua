@@ -3,6 +3,18 @@ local Snacks = require("snacks")
 
 local displays = setmetatable({}, { __mode = "v" })
 
+---Scrolls a display window to the end of its transcript.
+---@param display ai.ui.Display
+function M.scroll_to_bottom(display)
+    if not display:win_valid() then
+        return
+    end
+
+    pcall(vim.api.nvim_win_call, display.win, function()
+        vim.cmd("normal! G$zb")
+    end)
+end
+
 ---Scrolls an unfocused display to its newest output.
 ---@param buf integer
 local function follow_output(buf)
@@ -15,9 +27,7 @@ local function follow_output(buf)
     end
 
     -- Moves the cursor without changing the user's active window.
-    pcall(vim.api.nvim_win_call, display.win, function()
-        vim.cmd("normal! G$zb")
-    end)
+    M.scroll_to_bottom(display)
 end
 
 ---@class ai.ui.Display: snacks.win

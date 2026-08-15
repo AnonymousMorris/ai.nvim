@@ -72,6 +72,26 @@ function M.cursor_end(input)
     vim.api.nvim_win_set_cursor(input.win, { row, #line })
 end
 
+---Inserts a newline at the input cursor without invoking confirmation.
+---@param input ai.ui.Input
+function M.insert_newline(input)
+    if not input:buf_valid() or not input:win_valid() then
+        return
+    end
+
+    local cursor = vim.api.nvim_win_get_cursor(input.win)
+    vim.api.nvim_buf_set_text(
+        input.buf,
+        cursor[1] - 1,
+        cursor[2],
+        cursor[1] - 1,
+        cursor[2],
+        { "", "" }
+    )
+    vim.api.nvim_win_set_cursor(input.win, { cursor[1] + 1, 0 })
+    height_changed(input)
+end
+
 ---Clears an input and returns its cursor to the beginning.
 ---@param input ai.ui.Input
 function M.clear(input)

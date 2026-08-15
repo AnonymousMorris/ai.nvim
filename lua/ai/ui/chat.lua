@@ -133,6 +133,10 @@ function M.new(display_buf, input_buf, opts)
         chat:close()
     end
     local actions = {
+        insert_newline = function(input)
+            Input.insert_newline(input)
+            return true
+        end,
         interrupt = function()
             opts.on_interrupt()
             return true
@@ -179,7 +183,13 @@ function M.new(display_buf, input_buf, opts)
             keys = input_keys,
             on_close = close_layout,
         },
-    }, opts.on_submit)
+    }, function(value)
+        opts.on_submit(value)
+        if chat.layout and chat.layout:valid() then
+            chat:focus_display()
+            Display.scroll_to_bottom(chat.display)
+        end
+    end)
     chat.input.on_height_change = function()
         chat:update_input_layout()
     end
@@ -270,9 +280,7 @@ function M.new(display_buf, input_buf, opts)
     end
 
     -- Every fresh UI starts at the newest transcript output and input.
-    vim.api.nvim_win_call(chat.display.win, function()
-        vim.cmd("normal! G$zb")
-    end)
+    Display.scroll_to_bottom(chat.display)
     chat:focus_input()
     Input.cursor_end(chat.input)
 

@@ -75,7 +75,7 @@ vim.keymap.set("x", "<leader>ai", "<Cmd>AISelection<CR>", { desc = "Open AI chat
 | `:AISelection` | Add the visual selection to the chat input |
 | `:AIStop` | Stop the agent and delete the current session |
 
-Switching to the input enters insert mode automatically. The transcript and input use separate rounded windows, with a configurable contextual hint bar below them. In the input, `<C-c>` clears a non-empty prompt; press it with an empty prompt to interrupt the current AI turn. Closing the chat window keeps the session alive. Run `:AI` to reopen it or `:AIStop` to end it.
+Switching to the input enters insert mode automatically. The transcript and input use separate rounded windows, with a configurable contextual hint bar below them. In the input, `<Enter>` sends the prompt and focuses the transcript, `<S-Enter>` inserts a newline, and `<C-c>` clears a non-empty prompt; press `<C-c>` with an empty prompt to interrupt the current AI turn. Closing the chat window keeps the session alive. Run `:AI` to reopen it or `:AIStop` to end it.
 
 Selection context is inserted with its file and line range. Context blocks are folded by default.
 
@@ -104,6 +104,7 @@ The expanded lazy.nvim configuration below shows the plugin's actual defaults. I
       hints = {
         input = {
           { key = "⏎", label = "send" },
+          { key = "S-⏎", label = "newline" },
           { key = "C-c", label = "clear/interrupt" },
           { key = "C-n", label = "new" },
           { key = "Tab", label = "switch" },
@@ -114,6 +115,16 @@ The expanded lazy.nvim configuration below shows the plugin's actual defaults. I
       },
       keys = {
         input = {
+          ["<M-CR>"] = {
+            "insert_newline",
+            mode = "i",
+            desc = "Insert newline",
+          },
+          ["<S-CR>"] = {
+            "insert_newline",
+            mode = "i",
+            desc = "Insert newline",
+          },
           ["<C-c>"] = {
             "clear_or_interrupt",
             mode = { "i", "n" },

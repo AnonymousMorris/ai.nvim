@@ -112,8 +112,8 @@ assert(
 
 assert(chat.layout:valid(), "chat closed after submission")
 assert(
-    vim.api.nvim_get_current_win() == chat.input.win,
-    "input did not retain focus after submission"
+    vim.api.nvim_get_current_win() == chat.display.win,
+    "display did not receive focus after submission"
 )
 assert(session.ai, "submission did not create a session AI")
 assert(session.ai.backend == fake_backend, "session stored the wrong backend")

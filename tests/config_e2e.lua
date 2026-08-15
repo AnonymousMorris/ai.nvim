@@ -38,6 +38,11 @@ assert_equal(
 assert_equal(config.chat.hints.input[1].key, "⏎", "default chat hint key")
 assert_equal(
     config.chat.hints.input[2].label,
+    "newline",
+    "default newline hint"
+)
+assert_equal(
+    config.chat.hints.input[3].label,
     "clear/interrupt",
     "default clear or interrupt hint"
 )
@@ -54,6 +59,18 @@ assert_equal(#custom_hints.input, 1, "replaced input hint count")
 assert_equal(custom_hints.input[1].key, "x", "custom chat hint key")
 assert_equal(custom_hints.input[1].label, "display", "custom chat hint label")
 assert_equal(custom_hints.display[1].key, "Tab", "preserved display hints")
+for _, key in ipairs({ "<M-CR>", "<S-CR>" }) do
+    assert_equal(
+        Config.defaults.chat.keys.input[key][1],
+        "insert_newline",
+        "default input " .. key .. " key"
+    )
+    assert_equal(
+        Config.defaults.chat.keys.input[key].mode,
+        "i",
+        "default input " .. key .. " mode"
+    )
+end
 assert_equal(
     Config.defaults.chat.keys.input["<C-c>"][1],
     "clear_or_interrupt",
@@ -115,7 +132,7 @@ config.chat.keys = {}
 assert_equal(
     vim.tbl_count(Config.defaults.chat.keys.input)
         + vim.tbl_count(Config.defaults.chat.keys.display),
-    8,
+    10,
     "resolved config does not mutate defaults"
 )
 
