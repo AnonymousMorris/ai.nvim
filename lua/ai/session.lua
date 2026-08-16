@@ -5,6 +5,7 @@ local current
 
 ---@class ai.Session
 ---@field ai ai.AI
+---@field agent_spawn_dir string
 ---@field display_buf integer
 ---@field input_buf integer
 ---@field chat? ai.ui.Chat Open disposable chat UI.
@@ -45,10 +46,15 @@ local function assert_active(session)
 end
 
 ---Creates and selects a fully initialized AI session.
----@param opts? ai.StartOpts
+---@param opts? ai.SessionOpts
 ---@return ai.Session? session
 ---@return any? error
 function Session.new(opts)
+    local agent_spawn_dir = vim.fn.getcwd()
+    ---@type ai.StartOpts
+    local start_opts = vim.deepcopy(opts or {})
+    start_opts.agent_spawn_dir = agent_spawn_dir
+
     local ok, display_buf = pcall(create_scratch_buffer)
     if not ok then
         return nil, display_buf
@@ -61,7 +67,7 @@ function Session.new(opts)
         return nil, input_buf
     end
 
-    local started, ai, err = pcall(AI.start, display_buf, opts)
+    local started, ai, err = pcall(AI.start, display_buf, start_opts)
     if not started then
         err = ai
         ai = nil
@@ -74,6 +80,7 @@ function Session.new(opts)
 
     local session = setmetatable({
         ai = ai,
+        agent_spawn_dir = agent_spawn_dir,
         display_buf = display_buf,
         input_buf = input_buf,
         destroyed = false,
@@ -102,7 +109,7 @@ function Session.get_current()
 end
 
 ---Creates, selects, and shows a new session.
----@param opts? ai.StartOpts
+---@param opts? ai.SessionOpts
 ---@return ai.ui.Chat? chat
 ---@return any? error
 function Session.open_new(opts)
@@ -119,7 +126,7 @@ function Session.open_new(opts)
 end
 
 ---Shows the current session, creating it when necessary.
----@param opts? ai.StartOpts
+---@param opts? ai.SessionOpts
 ---@return ai.ui.Chat? chat
 ---@return any? error
 function Session.open_current(opts)

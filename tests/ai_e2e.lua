@@ -139,7 +139,23 @@ assert_equal(ai.status, "exited", "final AI status")
 assert_equal(ai.result.code, 0, "AI backend exit code")
 assert_equal(session.ai, ai, "session retains its AI")
 
-local missing, err = AI.start(session.display_buf, { backend = "missing" })
+local missing_dir_ok, missing_dir_err = pcall(AI.start, session.display_buf, {
+    backend = "missing",
+})
+assert_equal(missing_dir_ok, false, "missing agent spawn directory validation")
+assert(
+    tostring(missing_dir_err):find(
+        "agent spawn directory is required",
+        1,
+        true
+    ),
+    "missing agent spawn directory error"
+)
+
+local missing, err = AI.start(session.display_buf, {
+    agent_spawn_dir = repo,
+    backend = "missing",
+})
 assert_equal(missing, nil, "unknown backend result")
 assert_equal(err, "unknown AI backend: missing", "unknown backend error")
 

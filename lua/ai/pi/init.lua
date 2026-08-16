@@ -269,6 +269,11 @@ Pi.get_cmd = Command.build
 ---@return any? error
 function Pi.start(opts, dispatch)
     assert(type(opts) == "table", "Pi options are required")
+    assert(
+        type(opts.agent_spawn_dir) == "string"
+            and opts.agent_spawn_dir ~= "",
+        "agent spawn directory is required"
+    )
     assert(type(dispatch) == "function", "Pi dispatcher is required")
 
     local pi = setmetatable({
@@ -282,6 +287,7 @@ function Pi.start(opts, dispatch)
     }, Pi)
 
     local ok, process = pcall(vim.system, Command.build(opts), {
+        cwd = opts.agent_spawn_dir,
         text = true,
         stdin = true,
         -- Feeds scheduled stdout chunks into the Pi line buffer.

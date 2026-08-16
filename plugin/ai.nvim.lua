@@ -11,12 +11,16 @@ end, { desc = "Open the current AI session" })
 
 -- Open the current AI session with the active or latest visual selection.
 vim.api.nvim_create_user_command("AISelection", function()
-    local context = require("ai.context").get_visual_context()
+    local Session = require("ai.session")
+    local session = Session.get_current()
+    local agent_spawn_dir = session and session.agent_spawn_dir
+        or vim.fn.getcwd()
+    local context = require("ai.context").get_visual_context(agent_spawn_dir)
     if context == nil then
         vim.notify("AISelection requires a visual selection", vim.log.levels.WARN)
         return
     end
-    local chat = require("ai.session").open_current()
+    local chat = Session.open_current()
     if chat then
         chat:paste_input(context)
     end

@@ -1,8 +1,14 @@
 local M = {}
 
 ---Returns the active visual selection with its source location.
+---@param agent_spawn_dir string Directory from which the agent was spawned.
 ---@return string? context
-function M.get_visual_context()
+function M.get_visual_context(agent_spawn_dir)
+    assert(
+        type(agent_spawn_dir) == "string" and agent_spawn_dir ~= "",
+        "agent spawn directory is required"
+    )
+
     local mode = vim.fn.mode()
     if mode ~= "v" and mode ~= "V" and mode ~= "\22" then
         return nil
@@ -19,7 +25,7 @@ function M.get_visual_context()
     if name == "" then
         name = "[No Name]"
     else
-        name = vim.fn.fnamemodify(name, ":.")
+        name = vim.fs.relpath(agent_spawn_dir, name) or name
     end
 
     local start_line = math.min(start_pos[2], end_pos[2])

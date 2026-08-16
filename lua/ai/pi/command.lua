@@ -1,6 +1,6 @@
 local M = {}
 
----@class ai.PiOpts
+---@class ai.PiCommandOpts
 ---@field cmd? string[]
 ---@field binary? string
 ---@field extensions? boolean
@@ -10,6 +10,9 @@ local M = {}
 ---@field thinking? string
 ---@field system_prompt? string
 ---@field append_system_prompt? string|string[]
+
+---@class ai.PiOpts: ai.PiCommandOpts
+---@field agent_spawn_dir string
 
 ---Adds a valued option when its value is present.
 ---@param command string[]
@@ -23,7 +26,7 @@ local function add_option(command, flag, value)
 end
 
 ---Builds the command used to launch the Pi RPC process.
----@param opts ai.PiOpts
+---@param opts ai.PiCommandOpts
 ---@return string[]
 function M.build(opts)
     assert(type(opts) == "table", "Pi options are required")

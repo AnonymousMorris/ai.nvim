@@ -20,7 +20,28 @@ end
 
 assert(Pi.get_cmd == Command.build, "Pi command builder compatibility alias")
 
+local missing_dir_ok, missing_dir_err = pcall(
+    Pi.start,
+    { cmd = { "/bin/true" } },
+    function() end
+)
+assert_equal(missing_dir_ok, false, "missing Pi spawn directory validation")
+assert(
+    tostring(missing_dir_err):find(
+        "agent spawn directory is required",
+        1,
+        true
+    ),
+    "missing Pi spawn directory error"
+)
+
+local agent_spawn_dir = repo .. "/lua"
 local script = [=[
+if [ "$PWD" != "$1" ]; then
+    printf 'unexpected working directory: %s\n' "$PWD" >&2
+    exit 4
+fi
+
 IFS= read -r request
 case "$request" in
     *'"id":"prompt_1"'*'"type":"prompt"'* | \
@@ -64,7 +85,10 @@ local exits = {}
 local pi
 local start_err
 pi, start_err = Pi.start(
-    { cmd = { "/bin/sh", "-c", script } },
+    {
+        agent_spawn_dir = agent_spawn_dir,
+        cmd = { "/bin/sh", "-c", script, "pi-test", agent_spawn_dir },
+    },
     function(event)
         if event.type == EventType.USER or event.type == EventType.AI then
             events[#events + 1] = event
@@ -184,7 +208,10 @@ IFS= read -r _ || true
 local interrupt_events = {}
 local interrupt_errors = {}
 local interrupt_pi = assert(Pi.start(
-    { cmd = { "/bin/sh", "-c", interrupt_script } },
+    {
+        agent_spawn_dir = repo,
+        cmd = { "/bin/sh", "-c", interrupt_script },
+    },
     function(event)
         if event.type == EventType.USER or event.type == EventType.AI then
             interrupt_events[#interrupt_events + 1] = event
@@ -249,6 +276,7 @@ assert_equal(interrupt_events, {
 local partial_line = '{"type":"agent_'
 local cancelled_pi = assert(Pi.start(
     {
+        agent_spawn_dir = repo,
         cmd = {
             "/bin/sh",
             "-c",

@@ -87,7 +87,7 @@ local character_context = table.concat({
     "alpha",
 }, "\n")
 assert_equal(
-    Context.get_visual_context(),
+    Context.get_visual_context(repo),
     character_context,
     "characterwise selection context"
 )
@@ -109,6 +109,7 @@ assert_equal(visual_mapping.callback, nil, "visual AI mapping callback")
 vim.api.nvim_feedkeys("\\ai", "mx", false)
 
 local session = assert(Session.get_current(), "visual AI command did not create a session")
+assert_equal(session.agent_spawn_dir, repo, "agent spawn directory")
 local chat = assert(session.chat, "visual AI did not open the chat")
 assert_equal(
     vim.api.nvim_buf_get_lines(session.input_buf, 0, -1, false),
@@ -234,11 +235,13 @@ local line_context = table.concat({
     "local beta = two()",
 }, "\n")
 assert_equal(
-    Context.get_visual_context(),
+    Context.get_visual_context(repo),
     line_context,
     "linewise selection context"
 )
+vim.cmd("cd " .. vim.fn.fnameescape(repo .. "/lua"))
 vim.api.nvim_feedkeys("\\ai", "mx", false)
+vim.cmd("cd " .. vim.fn.fnameescape(repo))
 assert_equal(Session.get_current(), session, "visual context replaced the session")
 assert_equal(
     vim.api.nvim_buf_get_lines(session.input_buf, 0, -1, false),
@@ -262,7 +265,7 @@ assert_equal(
     "reopened selection context fold"
 )
 assert_equal(
-    Context.get_visual_context(),
+    Context.get_visual_context(repo),
     nil,
     "selection unavailable outside visual mode"
 )
@@ -274,7 +277,7 @@ vim.api.nvim_buf_set_lines(unnamed_buf, 0, -1, false, { "unnamed context" })
 vim.api.nvim_win_set_cursor(0, { 1, 0 })
 vim.cmd("normal! V")
 assert_equal(
-    Context.get_visual_context(),
+    Context.get_visual_context(repo),
     "File: [No Name]\nLine: 1\n\nunnamed context",
     "unnamed buffer selection context"
 )

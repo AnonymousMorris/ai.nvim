@@ -10,7 +10,7 @@ local EventType = Events.Type
 ---@class ai.Backend
 ---Backend events must not be dispatched before start() returns.
 ---Accepted user events must be dispatched exactly once by the backend.
----@field start fun(opts: table, dispatch: ai.Dispatcher): ai.Backend?, any?
+---@field start fun(opts: ai.StartOpts, dispatch: ai.Dispatcher): ai.Backend?, any?
 ---@field send fun(self: ai.Backend, event: ai.UserEvent): boolean?, any?
 ---@field interrupt fun(self: ai.Backend): boolean?, any?
 ---@field finish fun(self: ai.Backend): boolean?, any?
@@ -151,13 +151,16 @@ function AI:cancel()
     return self.backend:cancel()
 end
 
----@class ai.StartOpts
+---@class ai.SessionOpts
 ---@field backend? string
 ---@field cmd? string[] Backend-specific process command.
 
+---@class ai.StartOpts: ai.SessionOpts
+---@field agent_spawn_dir string Internal working directory for the agent.
+
 ---Creates an AI instance backed by the configured provider.
 ---@param buf integer Transcript buffer handle.
----@param opts? ai.StartOpts
+---@param opts ai.StartOpts
 ---@return ai.AI? ai
 ---@return any? error
 function M.start(buf, opts)
@@ -165,8 +168,14 @@ function M.start(buf, opts)
         type(buf) == "number" and vim.api.nvim_buf_is_valid(buf),
         "display buffer is required"
     )
+    assert(type(opts) == "table", "AI start options are required")
+    assert(
+        type(opts.agent_spawn_dir) == "string"
+            and opts.agent_spawn_dir ~= "",
+        "agent spawn directory is required"
+    )
 
-    opts = vim.tbl_deep_extend("force", {}, config, opts or {})
+    opts = vim.tbl_deep_extend("force", {}, config, opts)
     local backend_name = opts.backend or "pi"
     local backend = backends[backend_name]
     if not backend then
