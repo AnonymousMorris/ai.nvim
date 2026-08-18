@@ -23,6 +23,8 @@ M.AIAction = {
     DONE = "done",
 }
 
+---@alias ai.DeliveryMode "prompt"|"steer"
+
 ---@class (exact) ai.UserEvent
 ---@field type "user"
 ---@field content string

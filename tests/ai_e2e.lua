@@ -26,43 +26,32 @@ end
 
 local script = [=[
 IFS= read -r first
-case "$first" in
-    *'"id":"prompt_1"'*'"message":"first"'*'"type":"prompt"'* | \
-    *'"id":"prompt_1"'*'"type":"prompt"'*'"message":"first"'* | \
-    *'"message":"first"'*'"id":"prompt_1"'*'"type":"prompt"'* | \
-    *'"message":"first"'*'"type":"prompt"'*'"id":"prompt_1"'* | \
-    *'"type":"prompt"'*'"id":"prompt_1"'*'"message":"first"'* | \
-    *'"type":"prompt"'*'"message":"first"'*'"id":"prompt_1"'*) ;;
-    *)
-        printf 'unexpected first prompt: %s\n' "$first" >&2
-        exit 2
-        ;;
-esac
+case "$first" in *'"id":"prompt_1"'*) ;; *) exit 2 ;; esac
+case "$first" in *'"message":"first"'*) ;; *) exit 2 ;; esac
+case "$first" in *'"type":"prompt"'*) ;; *) exit 2 ;; esac
 printf '%s\n' '{"id":"prompt_1","type":"response","command":"prompt","success":true}'
 printf '%s\n' '{"type":"agent_start"}'
 printf '%s\n' '{"type":"message_update","assistantMessageEvent":{"type":"thinking_delta"}}'
 printf '%s\n' '{"type":"message_update","assistantMessageEvent":{"type":"text_delta","delta":"Hello world\n"}}'
+
+IFS= read -r second
+case "$second" in *'"id":"steer_2"'*) ;; *) exit 3 ;; esac
+case "$second" in *'"message":"second"'*) ;; *) exit 3 ;; esac
+case "$second" in *'"type":"steer"'*) ;; *) exit 3 ;; esac
+printf '%s\n' '{"id":"steer_2","type":"response","command":"steer","success":true}'
+printf '%s\n' '{"type":"tool_execution_start","toolName":"read"}'
+printf '%s\n' '{"type":"tool_execution_end","toolName":"read"}'
+printf '%s\n' '{"type":"message_update","assistantMessageEvent":{"type":"text_delta","delta":"Steered response"}}'
 printf '%s\n' '{"type":"agent_end"}'
 printf '%s\n' '{"type":"agent_settled"}'
 
-IFS= read -r second
-case "$second" in
-    *'"id":"prompt_2"'*'"message":"second"'*'"type":"prompt"'* | \
-    *'"id":"prompt_2"'*'"type":"prompt"'*'"message":"second"'* | \
-    *'"message":"second"'*'"id":"prompt_2"'*'"type":"prompt"'* | \
-    *'"message":"second"'*'"type":"prompt"'*'"id":"prompt_2"'* | \
-    *'"type":"prompt"'*'"id":"prompt_2"'*'"message":"second"'* | \
-    *'"type":"prompt"'*'"message":"second"'*'"id":"prompt_2"'*) ;;
-    *)
-        printf 'unexpected second prompt: %s\n' "$second" >&2
-        exit 3
-        ;;
-esac
-printf '%s\n' '{"id":"prompt_2","type":"response","command":"prompt","success":true}'
+IFS= read -r third
+case "$third" in *'"id":"prompt_3"'*) ;; *) exit 4 ;; esac
+case "$third" in *'"message":"third"'*) ;; *) exit 4 ;; esac
+case "$third" in *'"type":"prompt"'*) ;; *) exit 4 ;; esac
+printf '%s\n' '{"id":"prompt_3","type":"response","command":"prompt","success":true}'
 printf '%s\n' '{"type":"agent_start"}'
-printf '%s\n' '{"type":"tool_execution_start","toolName":"read"}'
-printf '%s\n' '{"type":"tool_execution_end","toolName":"read"}'
-printf '%s\n' '{"type":"message_update","assistantMessageEvent":{"type":"text_delta","delta":"Second response"}}'
+printf '%s\n' '{"type":"message_update","assistantMessageEvent":{"type":"text_delta","delta":"Final response"}}'
 printf '%s\n' '{"type":"agent_end"}'
 printf '%s\n' '{"type":"agent_settled"}'
 IFS= read -r _ || true
@@ -89,10 +78,10 @@ assert(
             -1,
             false
         )
-        return ai.status == "idle"
+        return ai.status == "thinking"
             and vim.tbl_contains(lines, "agent: Hello world")
     end),
-    "first AI request did not finish"
+    "first AI request did not remain active"
 )
 
 assert(ai:send("second"))
@@ -105,9 +94,24 @@ assert(
             false
         )
         return ai.status == "idle"
-            and vim.tbl_contains(lines, "agent: Second response")
+            and vim.tbl_contains(lines, "agent: Steered response")
     end),
-    "second AI request did not finish"
+    "steering AI request did not finish"
+)
+
+assert(ai:send("third"))
+assert(
+    vim.wait(2000, function()
+        local lines = vim.api.nvim_buf_get_lines(
+            session.display_buf,
+            0,
+            -1,
+            false
+        )
+        return ai.status == "idle"
+            and vim.tbl_contains(lines, "agent: Final response")
+    end),
+    "post-steering AI request did not finish"
 )
 assert(ai:finish())
 assert(
@@ -128,7 +132,11 @@ assert_equal(
         "user: second",
         "---",
         "✓ Tool complete: read",
-        "agent: Second response",
+        "agent: Steered response",
+        "---",
+        "user: third",
+        "---",
+        "agent: Final response",
         "---",
         "",
     },
@@ -191,9 +199,9 @@ assert_equal(
 )
 assert_equal(rejected_ai.error, "prompt rejected", "rejected prompt error")
 assert_equal(
-    rejected_ai.backend.pending_prompts,
+    rejected_ai.backend.pending_messages,
     {},
-    "pending prompts after rejection"
+    "pending messages after rejection"
 )
 assert_equal(rejected_notification, {
     message = "AI error: prompt rejected",

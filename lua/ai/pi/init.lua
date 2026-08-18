@@ -2,7 +2,7 @@
 ---@field process vim.SystemObj
 ---@field dispatch ai.Dispatcher
 ---@field stdout_tail string
----@field pending_prompts table<string, ai.UserEvent>
+---@field pending_messages table<string, { event: ai.UserEvent, command: ai.DeliveryMode }>
 ---@field request_id integer
 ---@field cancelled boolean
 ---@field stdin_closed boolean
@@ -99,29 +99,42 @@ local function normalize(event)
     return nil
 end
 
----Dispatches the user event accepted by a correlated prompt response.
+---Dispatches the user event accepted by a correlated message response.
 ---@param response table
-function Pi:handle_prompt_response(response)
+function Pi:handle_message_response(response)
     local id = response.id
-    local event = type(id) == "string" and self.pending_prompts[id] or nil
-    if not event then
+    local pending = type(id) == "string" and self.pending_messages[id]
+        or nil
+    if not pending then
         self.dispatch({
             type = EventType.ERROR,
-            message = "unexpected prompt response id: " .. tostring(id),
+            message = "unexpected message response id: " .. tostring(id),
             source = "protocol",
         })
         return
     end
 
-    self.pending_prompts[id] = nil
+    self.pending_messages[id] = nil
+    if response.command ~= pending.command then
+        self.dispatch({
+            type = EventType.ERROR,
+            message = ("unexpected response command for %s: %s"):format(
+                id,
+                tostring(response.command)
+            ),
+            source = "protocol",
+        })
+        return
+    end
+
     if response.success == true then
-        self.dispatch(event)
+        self.dispatch(pending.event)
         return
     end
 
     self.dispatch({
         type = EventType.ERROR,
-        message = response.error or "prompt rejected",
+        message = response.error or (pending.command .. " rejected"),
         source = "agent",
     })
 end
@@ -139,9 +152,17 @@ function Pi:process_stdout_line(line)
         return
     end
 
-    if event.type == "response" and event.command == "prompt" then
-        self:handle_prompt_response(event)
-        return
+    if event.type == "response" then
+        local pending = type(event.id) == "string"
+            and self.pending_messages[event.id]
+        if
+            pending
+            or event.command == "prompt"
+            or event.command == "steer"
+        then
+            self:handle_message_response(event)
+            return
+        end
     end
 
     local normalized = normalize(event)
@@ -199,28 +220,37 @@ end
 
 ---Encodes and sends one user event to Pi.
 ---@param event ai.UserEvent
+---@param mode? ai.DeliveryMode
 ---@return boolean? success
 ---@return any? error
-function Pi:send(event)
+function Pi:send(event, mode)
     assert(type(event) == "table", "user event is required")
     assert(event.type == EventType.USER, "Pi only accepts user events")
     assert(
         type(event.content) == "string" and event.content ~= "",
         "user event content is required"
     )
+    mode = mode or "prompt"
+    assert(
+        mode == "prompt" or mode == "steer",
+        "invalid Pi delivery mode: " .. tostring(mode)
+    )
 
     self.request_id = self.request_id + 1
-    local id = "prompt_" .. self.request_id
-    self.pending_prompts[id] = event
+    local id = mode .. "_" .. self.request_id
+    self.pending_messages[id] = {
+        event = event,
+        command = mode,
+    }
 
     local payload = vim.json.encode({
         id = id,
-        type = "prompt",
+        type = mode,
         message = event.content,
     }) .. "\n"
     local ok, err = self:write(payload)
     if not ok then
-        self.pending_prompts[id] = nil
+        self.pending_messages[id] = nil
     end
     return ok, err
 end
@@ -251,7 +281,7 @@ end
 function Pi:cancel()
     self.cancelled = true
     self.stdout_tail = ""
-    self.pending_prompts = {}
+    self.pending_messages = {}
 
     local ok, closing = pcall(self.process.is_closing, self.process)
     if not ok or not closing then
@@ -279,7 +309,7 @@ function Pi.start(opts, dispatch)
     local pi = setmetatable({
         dispatch = dispatch,
         stdout_tail = "",
-        pending_prompts = {},
+        pending_messages = {},
         request_id = 0,
         cancelled = false,
         stdin_closed = false,
@@ -307,7 +337,7 @@ function Pi.start(opts, dispatch)
     }, vim.schedule_wrap(function(result)
         -- Flushes buffered output and reports process completion.
         pi:flush_stdout()
-        pi.pending_prompts = {}
+        pi.pending_messages = {}
         pi.result = result
         pi.dispatch({
             type = EventType.EXIT,

@@ -88,9 +88,11 @@ function ChatTestBackend.start()
     return setmetatable({}, ChatTestBackend)
 end
 
-function ChatTestBackend:send(event)
+function ChatTestBackend:send(event, mode)
     self.sends = (self.sends or 0) + 1
     self.last_event = event
+    self.delivery_modes = self.delivery_modes or {}
+    self.delivery_modes[#self.delivery_modes + 1] = mode
     return true
 end
 
@@ -174,7 +176,7 @@ assert_equal(
     "chat hints position below the independent input window"
 )
 local input_hints = virtual_text(chat.hints.buf)
-assert_contains(input_hints, "⏎ send", "input submit hint")
+assert_contains(input_hints, "⏎ send/steer", "input submit hint")
 assert_contains(input_hints, "S-⏎ newline", "input newline hint")
 assert_contains(
     input_hints,
@@ -303,6 +305,11 @@ assert_equal(
     vim.api.nvim_win_get_cursor(chat.display.win)[1],
     102,
     "submission did not scroll the display to the bottom"
+)
+assert_equal(
+    session.ai.backend.delivery_modes,
+    { "prompt" },
+    "idle submission delivery mode"
 )
 
 chat:focus_display()

@@ -11,7 +11,7 @@ local EventType = Events.Type
 ---Backend events must not be dispatched before start() returns.
 ---Accepted user events must be dispatched exactly once by the backend.
 ---@field start fun(opts: ai.StartOpts, dispatch: ai.Dispatcher): ai.Backend?, any?
----@field send fun(self: ai.Backend, event: ai.UserEvent): boolean?, any?
+---@field send fun(self: ai.Backend, event: ai.UserEvent, mode: ai.DeliveryMode): boolean?, any?
 ---@field interrupt fun(self: ai.Backend): boolean?, any?
 ---@field finish fun(self: ai.Backend): boolean?, any?
 ---@field cancel fun(self: ai.Backend)
@@ -110,8 +110,16 @@ function AI:send(message)
         type = EventType.USER,
         content = message,
     }
+    local mode = (
+        self.status == "thinking" or self.status == "tool"
+    ) and "steer" or "prompt"
     self.error = nil
-    local called, ok, err = pcall(self.backend.send, self.backend, event)
+    local called, ok, err = pcall(
+        self.backend.send,
+        self.backend,
+        event,
+        mode
+    )
     if not called then
         err = ok
         ok = nil

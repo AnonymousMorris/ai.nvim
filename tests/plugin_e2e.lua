@@ -53,7 +53,9 @@ function CommandTestBackend.start(_, dispatch)
     return backend
 end
 
-function CommandTestBackend:send(event)
+function CommandTestBackend:send(event, mode)
+    self.delivery_modes = self.delivery_modes or {}
+    self.delivery_modes[#self.delivery_modes + 1] = mode
     self.dispatch(event)
     self.dispatch({ type = "ai", action = "thinking" })
     return true
@@ -101,6 +103,24 @@ local input_buf = session.input_buf
 assert(Session.open_current() == chat, "AI command duplicated the open chat")
 assert(session:submit("old session"))
 assert(session.ai.status == "thinking", "Control-N test turn was not active")
+assert(
+    vim.deep_equal(backend.delivery_modes, { "prompt" }),
+    "idle message was not sent as a prompt"
+)
+vim.api.nvim_buf_set_lines(input_buf, 0, -1, false, {
+    "steer the active turn",
+})
+chat.input:execute("confirm")
+assert(
+    vim.wait(1000, function()
+        return #backend.delivery_modes == 2
+    end),
+    "active-turn chat submission did not reach the backend"
+)
+assert(
+    vim.deep_equal(backend.delivery_modes, { "prompt", "steer" }),
+    "active-turn chat submission was not sent as steering"
+)
 vim.api.nvim_buf_set_lines(input_buf, 0, -1, false, { "discarded draft" })
 
 local previous_backend = backend

@@ -1,6 +1,6 @@
 # ai.nvim
 
-A small Neovim chat interface for [Pi](https://github.com/badlogic/pi-mono/tree/main/packages/coding-agent). It supports streaming responses, tool status, multi-turn conversations, and visual-selection context.
+A small Neovim chat interface for [Pi](https://github.com/badlogic/pi-mono/tree/main/packages/coding-agent). It supports streaming responses, mid-turn steering, tool status, multi-turn conversations, and visual-selection context.
 
 ## Demo
 
@@ -75,7 +75,7 @@ vim.keymap.set("x", "<leader>ai", "<Cmd>AISelection<CR>", { desc = "Open AI chat
 | `:AISelection` | Add the visual selection to the chat input |
 | `:AIStop` | Stop the agent and delete the current session |
 
-Switching to the input enters insert mode automatically. The transcript and input use separate rounded windows, with a configurable contextual hint bar below them. In the input, `<Enter>` sends the prompt and focuses the transcript, `<S-Enter>` inserts a newline, and `<C-c>` clears a non-empty prompt; press `<C-c>` with an empty prompt to interrupt the current AI turn. Closing the chat window keeps the session alive. Run `:AI` to reopen it or `:AIStop` to end it.
+Switching to the input enters insert mode automatically. The transcript and input use separate rounded windows, with a configurable contextual hint bar below them. In the input, `<Enter>` sends the prompt and focuses the transcript. If the AI is still processing the current turn, `<Enter>` sends the message as a steering instruction instead. `<S-Enter>` inserts a newline, and `<C-c>` clears a non-empty prompt; press `<C-c>` with an empty prompt to interrupt the current AI turn. Closing the chat window keeps the session alive. Run `:AI` to reopen it or `:AIStop` to end it.
 
 Selection context is inserted with its file and line range. Context blocks are folded by default.
 
@@ -103,7 +103,7 @@ The expanded lazy.nvim configuration below shows the plugin's actual defaults. I
       show_hints = true,
       hints = {
         input = {
-          { key = "⏎", label = "send" },
+          { key = "⏎", label = "send/steer" },
           { key = "S-⏎", label = "newline" },
           { key = "C-c", label = "clear/interrupt" },
           { key = "C-n", label = "new" },

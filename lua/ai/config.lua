@@ -13,7 +13,7 @@ M.defaults = {
         show_hints = true,
         hints = {
             input = {
-                { key = "⏎", label = "send" },
+                { key = "⏎", label = "send/steer" },
                 { key = "S-⏎", label = "newline" },
                 { key = "C-c", label = "clear/interrupt" },
                 { key = "C-n", label = "new" },

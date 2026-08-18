@@ -37,6 +37,11 @@ assert_equal(
 )
 assert_equal(config.chat.hints.input[1].key, "⏎", "default chat hint key")
 assert_equal(
+    config.chat.hints.input[1].label,
+    "send/steer",
+    "default submit hint"
+)
+assert_equal(
     config.chat.hints.input[2].label,
     "newline",
     "default newline hint"

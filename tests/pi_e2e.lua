@@ -118,8 +118,11 @@ local user_event = {
 }
 assert(pi:send(user_event))
 assert_equal(events, {}, "events before prompt acceptance")
-assert_equal(pi.pending_prompts, {
-    prompt_1 = user_event,
+assert_equal(pi.pending_messages, {
+    prompt_1 = {
+        event = user_event,
+        command = "prompt",
+    },
 }, "pending prompt before acceptance")
 assert(pi:write("release\n"))
 assert(
@@ -161,7 +164,7 @@ assert_equal(#exits, 1, "exit callback count")
 assert_equal(exits[1].code, 0, "exit code")
 assert(pi.process, "Pi object does not own its process")
 assert_equal(pi.stdin_closed, true, "closed stdin")
-assert_equal(pi.pending_prompts, {}, "pending prompts after acceptance")
+assert_equal(pi.pending_messages, {}, "pending messages after acceptance")
 
 local interrupt_script = [=[
 IFS= read -r first
