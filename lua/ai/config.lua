@@ -6,6 +6,7 @@ M.defaults = {
     extensions = true,
     skills = false,
     thinking = "off",
+    reload = true,
     auto_close = true,
     show_status = true,
     close_delay = 1000,

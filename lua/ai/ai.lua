@@ -1,10 +1,12 @@
 local M = {}
 
+local Buffers = require("ai.buffers")
 local Config = require("ai.config")
 local Events = require("ai.events")
 local Pi = require("ai.pi")
 local Transcript = require("ai.transcript")
 
+local AIAction = Events.AIAction
 local EventType = Events.Type
 
 ---@class ai.Backend
@@ -52,6 +54,8 @@ end
 ---@field status "starting"|"idle"|"thinking"|"tool"|"error"|"exited"|"cancelled"
 ---@field error? any
 ---@field result? vim.SystemCompleted
+---@field reload boolean
+---@field file_snapshots? table<string, table>
 local AI = {}
 AI.__index = AI
 
@@ -59,9 +63,19 @@ AI.__index = AI
 ---@param err any
 function AI:handle_error(err)
     pcall(self.transcript.finish_turn, self.transcript)
+    self.file_snapshots = nil
     self.status = "error"
     self.error = err
     vim.notify("AI error: " .. tostring(err), vim.log.levels.ERROR)
+end
+
+---Reloads files changed during a successfully completed AI turn.
+function AI:reload_changed_buffers()
+    local snapshots = self.file_snapshots
+    self.file_snapshots = nil
+    if snapshots then
+        Buffers.reload_changed(snapshots)
+    end
 end
 
 ---Applies an event accepted or emitted by the backend.
@@ -82,11 +96,15 @@ function AI:dispatch(event)
             self:handle_error(status)
         elseif status then
             self.status = status
+            if event.action == AIAction.DONE then
+                self:reload_changed_buffers()
+            end
         end
     elseif event.type == EventType.ERROR then
         self:handle_error(event.message)
     elseif event.type == EventType.EXIT then
         pcall(self.transcript.finish_turn, self.transcript)
+        self.file_snapshots = nil
         self.result = event.result
         if self.status ~= "cancelled" then
             self.status = "exited"
@@ -113,6 +131,9 @@ function AI:send(message)
     local mode = (
         self.status == "thinking" or self.status == "tool"
     ) and "steer" or "prompt"
+    if mode == "prompt" and self.reload and not self.file_snapshots then
+        self.file_snapshots = Buffers.snapshot()
+    end
     self.error = nil
     local called, ok, err = pcall(
         self.backend.send,
@@ -155,6 +176,7 @@ end
 ---Cancels the AI instance and its active backend.
 function AI:cancel()
     self.status = "cancelled"
+    self.file_snapshots = nil
     pcall(self.transcript.finish_turn, self.transcript)
     return self.backend:cancel()
 end
@@ -162,6 +184,7 @@ end
 ---@class ai.SessionOpts
 ---@field backend? string
 ---@field cmd? string[] Backend-specific process command.
+---@field reload? boolean Reload externally changed buffers after each turn.
 
 ---@class ai.StartOpts: ai.SessionOpts
 ---@field agent_spawn_dir string Internal working directory for the agent.
@@ -194,11 +217,14 @@ function M.start(buf, opts)
         backend_name = backend_name,
         status = "starting",
         transcript = Transcript.new(buf),
+        reload = opts.reload ~= false,
     }, AI)
 
+    local backend_opts = vim.deepcopy(opts)
+    backend_opts.reload = nil
     local ok, instance, err = pcall(
         backend.start,
-        opts,
+        backend_opts,
         function(event)
             ai:dispatch(event)
         end

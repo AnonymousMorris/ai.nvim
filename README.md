@@ -96,6 +96,7 @@ The expanded lazy.nvim configuration below shows the plugin's actual defaults. I
     extensions = true,
     skills = false,
     thinking = "off",
+    reload = true,
     auto_close = true,
     show_status = true,
     close_delay = 1000,
@@ -174,6 +175,8 @@ The expanded lazy.nvim configuration below shows the plugin's actual defaults. I
 Without lazy.nvim, pass the contents of `opts` above to `require("ai").setup()`.
 
 Pi runs in RPC mode with session persistence disabled. Extensions are enabled by default, while skills are disabled unless explicitly enabled.
+
+After each completed AI turn, `reload = true` reloads every loaded file buffer whose file changed on disk during that turn. This keeps Neovim synchronized with agent edits, including replacing unsaved buffer contents when the agent changed the same file. Set `reload = false` to disable this behavior.
 
 Set `chat.show_hints = false` to hide the contextual hint bar. The `chat.hints.input` and `chat.hints.display` lists are rendered exactly in their configured order. Set `chat.keys = false` to disable all chat-specific keymaps, or set `chat.keys.input` or `chat.keys.display` to `false` to disable one group.
 
