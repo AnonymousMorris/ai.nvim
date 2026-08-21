@@ -112,6 +112,11 @@ end
 AI.register_backend("chat-test", ChatTestBackend)
 Session.setup({})
 
+local left_win = vim.api.nvim_get_current_win()
+vim.cmd("botright vnew")
+local source_win = vim.api.nvim_get_current_win()
+assert(source_win ~= left_win, "chat focus test did not create a right split")
+
 local chat = assert(Session.open_current({ backend = "chat-test" }))
 local session = assert(Session.get_current())
 assert(chat.hints, "default chat hints were not created")
@@ -325,6 +330,11 @@ vim.api.nvim_win_set_cursor(chat.input.win, { 3, 0 })
 chat.input:execute("cancel")
 wait_for_close(chat)
 assert_equal(session.chat, nil, "session chat after input close")
+assert_equal(
+    vim.api.nvim_get_current_win(),
+    source_win,
+    "input close source focus"
+)
 
 local reopened = assert(Session.open_current())
 assert(reopened ~= chat, "closed chat UI was reused")
@@ -356,6 +366,11 @@ vim.cmd("normal! zz")
 vim.api.nvim_win_close(reopened.display.win, true)
 wait_for_close(reopened)
 assert_equal(session.chat, nil, "session chat after direct window close")
+assert_equal(
+    vim.api.nvim_get_current_win(),
+    source_win,
+    "direct display close source focus"
+)
 
 local final_chat = assert(Session.open_current())
 assert(final_chat ~= reopened, "directly closed chat UI was reused")
@@ -370,9 +385,15 @@ assert(
     final_input_cursor[1] == 3 and final_input_cursor[2] == 10,
     "final input cursor: " .. vim.inspect(final_input_cursor)
 )
-final_chat:close()
+final_chat:focus_display()
+vim.api.nvim_feedkeys("q", "mx", false)
 wait_for_close(final_chat)
 assert_equal(session.chat, nil, "session chat after final close")
+assert_equal(
+    vim.api.nvim_get_current_win(),
+    source_win,
+    "display quit source focus"
+)
 
 Chat.setup({
     hints = {

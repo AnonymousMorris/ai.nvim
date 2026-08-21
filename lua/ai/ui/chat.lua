@@ -18,6 +18,7 @@ local config = vim.deepcopy(Config.defaults.chat)
 ---@field layout snacks.layout
 ---@field input_height? integer
 ---@field on_close? fun(chat: ai.ui.Chat)
+---@field source_win? integer
 local Chat = {}
 Chat.__index = Chat
 
@@ -74,12 +75,22 @@ end
 ---Destroys the chat UI and reports its closure once.
 function Chat:close()
     local on_close = self.on_close
+    local source_win = self.source_win
     self.on_close = nil
+    self.source_win = nil
     if not self.layout.closed then
         self.layout:close()
     end
     if on_close then
         on_close(self)
+    end
+    if
+        source_win
+        and vim.api.nvim_win_is_valid(source_win)
+        and vim.api.nvim_win_get_tabpage(source_win)
+            == vim.api.nvim_get_current_tabpage()
+    then
+        pcall(vim.api.nvim_set_current_win, source_win)
     end
 end
 
@@ -127,6 +138,7 @@ function M.new(display_buf, input_buf, opts)
     local chat = setmetatable({
         hint_context = "input",
         on_close = opts.on_close,
+        source_win = vim.api.nvim_get_current_win(),
     }, Chat)
     -- Gives either child window a shared layout-close action.
     local function close_layout()
