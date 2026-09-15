@@ -356,8 +356,10 @@ function Pi.start(opts, dispatch)
             and has_prompt
             and tostring(process):find("E2BIG:", 1, true)
         then
-            return nil, "The system prompt is too large to start Pi. "
-                .. "Shorten your prompt text or prompt files, then try again."
+            return nil, "Pi could not start because its inputs exceed the system size limit. "
+                .. "Shorten your system prompt text or prompt files, "
+                .. "or check other startup options.\n"
+                .. tostring(process)
         end
         return nil, process
     end
