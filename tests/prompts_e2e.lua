@@ -51,7 +51,11 @@ end
 
 local notifications = {}
 local notify = vim.notify
-vim.notify = function(message) notifications[#notifications + 1] = message end
+local notification_levels = {}
+vim.notify = function(message, level)
+    notifications[#notifications + 1] = message
+    notification_levels[#notification_levels + 1] = level
+end
 
 -- Configuration is stored at setup; startup failures use the existing notification.
 local function startup_error(opts, expected)
@@ -62,9 +66,24 @@ local function startup_error(opts, expected)
     assert(Session.get_current() == nil, "invalid prompt configuration opened a session")
     assert(#vim.api.nvim_list_bufs() == before, "failed startup leaked scratch buffers")
     assert(#notifications == count + 1, "startup did not report one error")
+    assert(notification_levels[#notification_levels] == vim.log.levels.ERROR, "startup notification was not an error")
     assert(notifications[#notifications]:find("Failed to start AI backend:", 1, true), "startup notification was bypassed")
     assert(notifications[#notifications]:find(expected, 1, true), "startup notification omitted the error")
 end
+
+-- Exercise the real OS argument limit through :AI, for both text and files.
+local large_prompt = string.rep("Keep responses concise.\n", 50000)
+local large_file = root .. "/large.md"
+vim.fn.writefile({ large_prompt }, large_file, "b")
+local size_error = "The system prompt is too large to start Pi. "
+    .. "Shorten your prompt text or prompt files, then try again."
+startup_error({ append_system_prompt = { large_prompt, large_prompt } }, size_error)
+startup_error({ append_system_prompt_filepath = large_file }, size_error)
+startup_error({ system_prompt = large_prompt }, size_error)
+
+-- Preserve the original diagnostics for custom commands and unrelated failures.
+startup_error({ cmd = { binary, large_prompt } }, "E2BIG:")
+startup_error({ binary = missing }, "ENOENT:")
 
 startup_error({ append_system_prompt_filepath = missing }, missing)
 assert(notifications[#notifications]:find("append_system_prompt_filepath", 1, true), "error omitted the option name")
