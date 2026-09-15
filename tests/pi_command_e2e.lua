@@ -2,6 +2,7 @@ local repo = vim.fn.getcwd()
 vim.opt.runtimepath:prepend(repo)
 
 local Command = require("ai.pi.command")
+local Config = require("ai.config")
 
 local function assert_equal(actual, expected, message)
     assert(
@@ -14,22 +15,37 @@ local function assert_equal(actual, expected, message)
     )
 end
 
-assert_equal(Command.build({
+assert_equal(Command.build(Config.backend()), {
+    "pi",
+    "--mode",
+    "rpc",
+    "--no-session",
+    "--no-skills",
+    "--thinking",
+    "off",
+}, "defaults select no skills and append no custom prompt")
+
+assert_equal(Command.build(Config.backend({
     binary = "~/bin/pi",
     extensions = false,
     skills = false,
+    skill_paths = { "~/skills/writing/SKILL.md", "project skills" },
     provider = "test-provider",
     model = "test-model",
     thinking = "high",
     system_prompt = "system prompt",
-    append_system_prompt = { "first append", "second append" },
-}), {
+    append_system_prompt = { "Keep $HOME and {{name}} literal", "~/prompts/style.md" },
+})), {
     vim.fn.expand("~/bin/pi"),
     "--mode",
     "rpc",
     "--no-session",
     "--no-extensions",
     "--no-skills",
+    "--skill",
+    vim.fn.expand("~/skills/writing/SKILL.md"),
+    "--skill",
+    "project skills",
     "--provider",
     "test-provider",
     "--model",
@@ -39,26 +55,57 @@ assert_equal(Command.build({
     "--system-prompt",
     "system prompt",
     "--append-system-prompt",
-    "first append",
-    "--append-system-prompt",
-    "second append",
-}, "Pi command")
+    "Keep $HOME and {{name}} literal\n\n~/prompts/style.md",
+}, "Pi command uses configured skills and prompts")
 
 assert_equal(Command.build({
     binary = "pi",
     extensions = true,
     skills = true,
-    append_system_prompt = "single append",
+    skill_paths = { "extra-skills" },
+    append_system_prompt = "/tmp/writing instructions.md",
 }), {
     "pi",
     "--mode",
     "rpc",
     "--no-session",
+    "--skill",
+    "extra-skills",
     "--append-system-prompt",
-    "single append",
+    "/tmp/writing instructions.md",
 }, "Pi command with optional features")
 
+for _, paths in ipairs({ "skills", false, { named = "skills" }, { [2] = "skills" } }) do
+    local ok, err = pcall(Command.build, { binary = "pi", skill_paths = paths })
+    assert_equal(ok, false, "invalid skill_paths validation")
+    assert(
+        tostring(err):find("skill_paths must be a list of paths", 1, true),
+        "invalid skill_paths error"
+    )
+end
+
+assert_equal(
+    Command.build(Config.backend({ skill_paths = { "", "local-skills", "" } })),
+    Command.build(Config.backend({ skill_paths = { "local-skills" } })),
+    "empty skill paths are ignored"
+)
+
+for _, path in ipairs({ false, 42 }) do
+    local ok, err = pcall(Command.build, { binary = "pi", skill_paths = { path } })
+    assert_equal(ok, false, "invalid skill path validation")
+    assert(
+        tostring(err):find("skill_paths entries must be strings", 1, true),
+        "invalid skill path error"
+    )
+end
+
 local command_override = { "custom-pi", "--custom" }
+for _, url in ipairs({ "https://example.com/SKILL.md", "http://example.com/SKILL.md" }) do
+    local ok, err = pcall(Command.build, { binary = "pi", skill_paths = { url } })
+    assert_equal(ok, false, "skill URL validation")
+    assert(tostring(err):find("skill_paths entries must be local paths", 1, true), "skill URL error")
+end
+
 local overridden_command = Command.build({ cmd = command_override })
 assert_equal(overridden_command, command_override, "Pi command override")
 assert(overridden_command ~= command_override, "Pi command override was not copied")

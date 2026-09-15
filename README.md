@@ -95,6 +95,7 @@ The expanded lazy.nvim configuration below shows the plugin's actual defaults. I
     binary = "pi",
     extensions = true,
     skills = false,
+    skill_paths = {},
     thinking = "off",
     reload = true,
     auto_close = true,
@@ -174,11 +175,73 @@ The expanded lazy.nvim configuration below shows the plugin's actual defaults. I
 
 Without lazy.nvim, pass the contents of `opts` above to `require("ai").setup()`.
 
-Pi runs in RPC mode with session persistence disabled. Extensions are enabled by default, while skills are disabled unless explicitly enabled.
+Pi runs in RPC mode with session persistence disabled. Extensions are enabled by default.
 
 After each completed AI turn, `reload = true` reloads every loaded file buffer whose file changed on disk during that turn. This keeps Neovim synchronized with agent edits, including replacing unsaved buffer contents when the agent changed the same file. Set `reload = false` to disable this behavior.
 
 Set `chat.show_hints = false` to hide the contextual hint bar. The `chat.hints.input` and `chat.hints.display` lists are rendered exactly in their configured order. Set `chat.keys = false` to disable all chat-specific keymaps, or set `chat.keys.input` or `chat.keys.display` to `false` to disable one group.
+
+### Skills
+
+No skills are bundled or enabled by default.
+
+- `skills = true` enables Pi's skill discovery, including `~/.agents/skills/`.
+- `skill_paths = { ... }` loads local `SKILL.md` files or directories, even with `skills = false`.
+
+Paths support `~`; relative paths use the agent's working directory.
+
+Pi loads skill instructions when needed. To invoke a skill explicitly, send `/skill:name` followed by your request.
+
+### System prompt
+
+Append text, file contents, or both:
+
+```lua
+require("ai").setup({
+  append_system_prompt = "Keep responses concise.",
+  append_system_prompt_filepath = "~/.config/nvim/ai/writing.md",
+})
+```
+
+Both options are optional and accept a string or list of strings. Text comes first, then file contents, in list order with blank lines between entries.
+
+To append multiple prompts:
+
+```lua
+require("ai").setup({
+  append_system_prompt = {
+    "Keep responses concise.",
+    "Explain your changes.",
+  },
+  append_system_prompt_filepath = {
+    "~/.config/nvim/ai/writing.md",
+    "~/.config/nvim/ai/project.md",
+  },
+})
+```
+
+Files are read when opening a new session, including with Ctrl-N. Missing or unreadable files stop startup with an error notification. Paths support `~/`; relative paths use the agent's working directory.
+
+### Recommended upstream skill
+
+[Unslop](https://github.com/cursor/plugins/blob/main/pstack/skills/unslop/SKILL.md) by [Lauren Tan](https://github.com/poteto) removes common AI writing patterns. It is [MIT licensed](https://github.com/cursor/plugins/blob/main/pstack/LICENSE).
+
+With Unslop installed in `~/.agents/skills/unslop/`:
+
+```lua
+require("ai").setup({
+  skill_paths = {
+    "~/.agents/skills/unslop/SKILL.md",
+  },
+  append_system_prompt_filepath = "~/.config/nvim/ai/unslop.md",
+})
+```
+
+Unslop disables automatic model invocation. Use `/skill:unslop`, or create `~/.config/nvim/ai/unslop.md` with:
+
+```markdown
+Before writing or editing prose, read `~/.agents/skills/unslop/SKILL.md` and follow its Unslop instructions.
+```
 
 ## Tests
 

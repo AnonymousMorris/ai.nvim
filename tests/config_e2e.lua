@@ -16,6 +16,7 @@ end
 
 local config = Config.resolve({
     model = "test-model",
+    skill_paths = { "custom-skills/SKILL.md" },
     custom_backend_option = "preserved",
     chat = { keys = false },
 })
@@ -25,6 +26,7 @@ assert_equal(config.binary, "pi", "default binary")
 assert_equal(config.thinking, "off", "default thinking level")
 assert_equal(config.extensions, true, "default extensions")
 assert_equal(config.skills, false, "default skills")
+assert_equal(Config.defaults.skill_paths, {}, "default skill paths")
 assert_equal(config.reload, true, "default buffer reload")
 assert_equal(config.auto_close, true, "default auto close")
 assert_equal(config.model, "test-model", "overridden model")
@@ -126,6 +128,7 @@ assert_equal(
 local backend = Config.backend(config)
 assert_equal(backend.backend, "pi", "backend name")
 assert_equal(backend.model, "test-model", "backend model")
+assert_equal(backend.skill_paths, { "custom-skills/SKILL.md" }, "backend skill paths")
 assert_equal(backend.reload, true, "AI buffer reload")
 assert_equal(
     backend.custom_backend_option,
