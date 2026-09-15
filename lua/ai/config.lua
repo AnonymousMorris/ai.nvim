@@ -5,6 +5,7 @@ M.defaults = {
     binary = "pi",
     extensions = true,
     skills = false,
+    skill_paths = {},
     thinking = "off",
     reload = true,
     auto_close = true,
