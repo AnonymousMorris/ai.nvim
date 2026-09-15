@@ -188,7 +188,7 @@ No skills are bundled or enabled by default.
 - `skills = true` enables Pi's skill discovery, including `~/.agents/skills/`.
 - `skill_paths = { ... }` loads local `SKILL.md` files or directories, even with `skills = false`.
 
-Paths support `~`; relative paths use the agent's working directory.
+Only a leading `~/` is expanded. Other path text is passed to Pi unchanged, and relative paths use the agent's working directory.
 
 Pi loads skill instructions when needed. To invoke a skill explicitly, send `/skill:name` followed by your request.
 
@@ -220,9 +220,11 @@ require("ai").setup({
 })
 ```
 
-Files are read when opening a new session, including with Ctrl-N. Missing or unreadable files stop startup with an error notification. Paths support `~/`; relative paths use the agent's working directory.
+Files are read when opening a new session, including with Ctrl-N. Missing or unreadable files stop startup with an error notification. Only a leading `~/` is expanded; relative paths use the agent's working directory.
 
-The plugin passes the combined prompt through a private temporary file, so large prompts do not hit the operating system's command-line size limit. Text stays literal even when it matches an existing filename. The temporary file is removed when the backend exits, the session is stopped, or startup fails. Model context limits still apply.
+The plugin passes a nonempty combined prompt through an owner-only temporary file, so its size does not count against the operating system's command-line limit. `append_system_prompt` text stays literal even when it matches an existing filename.
+
+The separate `system_prompt` option replaces Pi's default prompt. When its value names an existing path, Pi keeps its file-input behavior and ai.nvim leaves that file in place. Other nonempty values, including large literal prompts, use an owner-only temporary file. The plugin removes its temporary files when the backend exits, the session is stopped, or startup fails. Model context limits still apply.
 
 ### Recommended upstream skill
 
