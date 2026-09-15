@@ -75,6 +75,35 @@ assert_equal(Command.build({
     "/tmp/writing instructions.md",
 }, "Pi command with optional features")
 
+local literal_skill_paths = {
+    "#notes/SKILL.md",
+    "%notes/SKILL.md",
+    "skills/$HOME/SKILL.md",
+    "lua/ai/*.lua",
+    "lua/ai/[cp]*.lua",
+}
+assert_equal(Command.build({
+    binary = "pi",
+    extensions = true,
+    skills = true,
+    skill_paths = literal_skill_paths,
+}), {
+    "pi",
+    "--mode",
+    "rpc",
+    "--no-session",
+    "--skill",
+    literal_skill_paths[1],
+    "--skill",
+    literal_skill_paths[2],
+    "--skill",
+    literal_skill_paths[3],
+    "--skill",
+    literal_skill_paths[4],
+    "--skill",
+    literal_skill_paths[5],
+}, "Pi command preserves literal skill paths")
+
 for _, paths in ipairs({ "skills", false, { named = "skills" }, { [2] = "skills" } }) do
     local ok, err = pcall(Command.build, { binary = "pi", skill_paths = paths })
     assert_equal(ok, false, "invalid skill_paths validation")

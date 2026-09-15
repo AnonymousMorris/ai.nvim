@@ -12,6 +12,8 @@ vim.fn.mkdir(root, "p")
 local missing = root .. "/missing.md"
 local instructions = root .. "/instructions.md"
 vim.fn.writefile({ "File instructions with $HOME, {{name}}, and Unicode: 台灣." }, instructions)
+local empty = root .. "/empty.md"
+vim.fn.writefile({}, empty)
 
 local function read(path)
     return table.concat(vim.fn.readfile(path, "b"), "\n")
@@ -83,6 +85,8 @@ startup_error({ system_prompt = large_prompt }, size_error)
 
 -- Preserve the original diagnostics for custom commands and unrelated failures.
 startup_error({ cmd = { binary, large_prompt } }, "E2BIG:")
+startup_error({ model = large_prompt }, "E2BIG:")
+startup_error({ model = large_prompt, append_system_prompt_filepath = empty }, "E2BIG:")
 startup_error({ binary = missing }, "ENOENT:")
 
 startup_error({ append_system_prompt_filepath = missing }, missing)
@@ -117,8 +121,6 @@ launch({
     append_system_prompt_filepath = { instructions, other },
 }, "First instruction.\n\nSecond instruction.\n\n" .. read(instructions) .. "\n\n" .. instructions)
 
-local empty = root .. "/empty.md"
-vim.fn.writefile({}, empty)
 launch({ append_system_prompt = "", append_system_prompt_filepath = empty }, "")
 
 -- Setup can precede a directory change; relative paths use the session directory.

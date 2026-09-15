@@ -316,37 +316,46 @@ function Pi.start(opts, dispatch)
         result = nil,
     }, Pi)
 
-    local ok, process = pcall(vim.system, Command.build(opts), {
-        cwd = opts.agent_spawn_dir,
-        text = true,
-        stdin = true,
-        -- Feeds scheduled stdout chunks into the Pi line buffer.
-        stdout = vim.schedule_wrap(function(err, data)
-            if err then
-                pi.dispatch({
-                    type = EventType.ERROR,
-                    message = tostring(err),
-                    source = "stdout",
-                })
-                return
-            end
-            if not pi.cancelled then
-                pi:feed_stdout(data)
-            end
-        end),
-    }, vim.schedule_wrap(function(result)
-        -- Flushes buffered output and reports process completion.
-        pi:flush_stdout()
-        pi.pending_messages = {}
-        pi.result = result
-        pi.dispatch({
-            type = EventType.EXIT,
-            result = pi.result,
-        })
-    end))
+    local has_prompt
+    local ok, process = pcall(function()
+        local command
+        command, has_prompt = Command.build_for_start(opts)
+        return vim.system(command, {
+            cwd = opts.agent_spawn_dir,
+            text = true,
+            stdin = true,
+            -- Feeds scheduled stdout chunks into the Pi line buffer.
+            stdout = vim.schedule_wrap(function(err, data)
+                if err then
+                    pi.dispatch({
+                        type = EventType.ERROR,
+                        message = tostring(err),
+                        source = "stdout",
+                    })
+                    return
+                end
+                if not pi.cancelled then
+                    pi:feed_stdout(data)
+                end
+            end),
+        }, vim.schedule_wrap(function(result)
+            -- Flushes buffered output and reports process completion.
+            pi:flush_stdout()
+            pi.pending_messages = {}
+            pi.result = result
+            pi.dispatch({
+                type = EventType.EXIT,
+                result = pi.result,
+            })
+        end))
+    end)
 
     if not ok then
-        if not opts.cmd and tostring(process):find("E2BIG:", 1, true) then
+        if
+            not opts.cmd
+            and has_prompt
+            and tostring(process):find("E2BIG:", 1, true)
+        then
             return nil, "The system prompt is too large to start Pi. "
                 .. "Shorten your prompt text or prompt files, then try again."
         end
