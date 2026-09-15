@@ -222,6 +222,8 @@ require("ai").setup({
 
 Files are read when opening a new session, including with Ctrl-N. Missing or unreadable files stop startup with an error notification. Paths support `~/`; relative paths use the agent's working directory.
 
+The plugin passes the combined prompt through a private temporary file, so large prompts do not hit the operating system's command-line size limit. Text stays literal even when it matches an existing filename. The temporary file is removed when the backend exits, the session is stopped, or startup fails. Model context limits still apply.
+
 ### Recommended upstream skill
 
 [Unslop](https://github.com/cursor/plugins/blob/main/pstack/skills/unslop/SKILL.md) by [Lauren Tan](https://github.com/poteto) removes common AI writing patterns. It is [MIT licensed](https://github.com/cursor/plugins/blob/main/pstack/LICENSE).

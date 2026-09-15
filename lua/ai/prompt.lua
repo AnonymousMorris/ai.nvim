@@ -20,6 +20,13 @@ local function strings(value, option, allow_empty)
     return value
 end
 
+local function absolute_path(path, cwd)
+    if not path:match("^/") and not path:match("^%a:[/\\]") then
+        return cwd .. "/" .. path
+    end
+    return path
+end
+
 local function read_prompt(path, cwd)
     assert(
         not path:match("^%a[%w+.-]*://"),
@@ -28,15 +35,51 @@ local function read_prompt(path, cwd)
     if path:sub(1, 2) == "~/" then
         path = vim.fn.expand("~") .. path:sub(2)
     end
-    if not path:match("^/") and not path:match("^%a:[/\\]") then
-        path = cwd .. "/" .. path
-    end
+    path = absolute_path(path, cwd)
     local stat = vim.uv.fs_stat(path)
     assert(
         stat and stat.type == "file",
         "append_system_prompt_filepath: expected a file: " .. path
     )
     return table.concat(vim.fn.readfile(path, "b"), "\n")
+end
+
+---Checks the existing-path interpretation used by Pi's system_prompt option.
+---@param text string
+---@param cwd string
+---@return boolean
+function M.is_path(text, cwd)
+    return vim.uv.fs_stat(absolute_path(text, cwd)) ~= nil
+end
+
+---Writes prompt text to an exclusively created, owner-only temporary file.
+---@param text string
+---@return string path The caller owns deletion of this file.
+function M.write_temp(text)
+    assert(type(text) == "string", "system prompt must be a string")
+    local path = vim.fn.tempname()
+    local fd, open_err = vim.uv.fs_open(path, "wx", 384)
+    assert(fd, "Could not create temporary system prompt file: " .. tostring(open_err))
+
+    local ok, err = pcall(function()
+        local offset = 0
+        while offset < #text do
+            local written, write_err = vim.uv.fs_write(fd, text:sub(offset + 1), offset)
+            assert(written and written > 0, "Could not write temporary system prompt file: " .. tostring(write_err))
+            offset = offset + written
+        end
+        local closed, close_err = vim.uv.fs_close(fd)
+        assert(closed, "Could not close temporary system prompt file: " .. tostring(close_err))
+        fd = nil
+    end)
+    if not ok then
+        if fd then
+            pcall(vim.uv.fs_close, fd)
+        end
+        pcall(vim.uv.fs_unlink, path)
+        error(err, 0)
+    end
+    return path
 end
 
 ---Combines configured text and file contents when starting a session.

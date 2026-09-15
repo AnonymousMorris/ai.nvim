@@ -35,11 +35,15 @@ local function expand_home(path)
     return path
 end
 
-local function build(opts)
+---Builds the command used to launch the Pi RPC process.
+---@param opts ai.PiCommandOpts
+---@param prepare_prompt? fun(text: string, flag: string): string
+---@return string[]
+function M.build(opts, prepare_prompt)
     assert(type(opts) == "table", "Pi options are required")
 
     if opts.cmd then
-        return vim.deepcopy(opts.cmd), false
+        return vim.deepcopy(opts.cmd)
     end
 
     assert(
@@ -81,24 +85,18 @@ local function build(opts)
     add_option(command, "--model", opts.model)
     add_option(command, "--thinking", opts.thinking)
 
-    local prompt_start = #command
-    add_option(command, "--system-prompt", opts.system_prompt)
-
-    add_option(command, "--append-system-prompt", Prompt.build(opts))
-
-    return command, #command > prompt_start
-end
-
----Builds the command used to launch the Pi RPC process.
----@param opts ai.PiCommandOpts
----@return string[]
-function M.build(opts)
-    local command = build(opts)
+    local function add_prompt(flag, text)
+        if text ~= nil and text ~= "" then
+            assert(type(text) == "string", flag .. " must be a string")
+            if prepare_prompt then
+                text = prepare_prompt(text, flag)
+            end
+            add_option(command, flag, text)
+        end
+    end
+    add_prompt("--system-prompt", opts.system_prompt)
+    add_prompt("--append-system-prompt", Prompt.build(opts))
     return command
-end
-
-function M.build_for_start(opts)
-    return build(opts)
 end
 
 return M

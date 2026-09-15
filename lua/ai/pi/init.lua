@@ -6,15 +6,29 @@
 ---@field request_id integer
 ---@field cancelled boolean
 ---@field stdin_closed boolean
+---@field prompt_files string[]
 ---@field result? vim.SystemCompleted
 local Pi = {}
 Pi.__index = Pi
 
 local Command = require("ai.pi.command")
 local Events = require("ai.events")
+local Prompt = require("ai.prompt")
 
 local AIAction = Events.AIAction
 local EventType = Events.Type
+
+---Releases prompt files before user callbacks can interrupt teardown.
+local function cleanup_prompt_files(pi)
+    local paths = pi.prompt_files
+    pi.prompt_files = {}
+    for _, path in ipairs(paths) do
+        local removed, err, code = vim.uv.fs_unlink(path)
+        if not removed and code ~= "ENOENT" then
+            pcall(vim.notify, "Could not delete temporary system prompt file: " .. tostring(err), vim.log.levels.WARN)
+        end
+    end
+end
 
 -- Decodes one JSON event line without raising parse errors.
 local function decode_event(line)
@@ -287,6 +301,7 @@ function Pi:cancel()
     if not ok or not closing then
         pcall(self.process.kill, self.process, 15)
     end
+    cleanup_prompt_files(self)
 end
 
 ---Builds the command used to launch the Pi RPC process.
@@ -314,12 +329,18 @@ function Pi.start(opts, dispatch)
         cancelled = false,
         stdin_closed = false,
         result = nil,
+        prompt_files = {},
     }, Pi)
 
-    local has_prompt
     local ok, process = pcall(function()
-        local command
-        command, has_prompt = Command.build_for_start(opts)
+        local command = Command.build(opts, function(text, flag)
+            if flag == "--system-prompt" and Prompt.is_path(text, opts.agent_spawn_dir) then
+                return text
+            end
+            local path = Prompt.write_temp(text)
+            pi.prompt_files[#pi.prompt_files + 1] = path
+            return path
+        end)
         return vim.system(command, {
             cwd = opts.agent_spawn_dir,
             text = true,
@@ -339,6 +360,7 @@ function Pi.start(opts, dispatch)
                 end
             end),
         }, vim.schedule_wrap(function(result)
+            cleanup_prompt_files(pi)
             -- Flushes buffered output and reports process completion.
             pi:flush_stdout()
             pi.pending_messages = {}
@@ -351,16 +373,7 @@ function Pi.start(opts, dispatch)
     end)
 
     if not ok then
-        if
-            not opts.cmd
-            and has_prompt
-            and tostring(process):find("E2BIG:", 1, true)
-        then
-            return nil, "Pi could not start because its inputs exceed the system size limit. "
-                .. "Shorten your system prompt text or prompt files, "
-                .. "or check other startup options.\n"
-                .. tostring(process)
-        end
+        cleanup_prompt_files(pi)
         return nil, process
     end
 
