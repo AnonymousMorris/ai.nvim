@@ -300,6 +300,14 @@ assert_equal(
     chat.input.win,
     "Shift-Enter moved input focus"
 )
+vim.api.nvim_win_set_cursor(chat.input.win, { 2, 0 })
+chat:focus_input()
+vim.api.nvim_feedkeys(vim.keycode("i<BS><C-\\><C-n>"), "mx", false)
+assert_equal(
+    vim.api.nvim_buf_get_lines(session.input_buf, 0, -1, false),
+    { "firstx" },
+    "Backspace at the start of a line did not remove the newline"
+)
 
 chat:focus_display()
 vim.api.nvim_win_set_cursor(chat.display.win, { 50, 0 })

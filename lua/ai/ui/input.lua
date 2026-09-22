@@ -170,6 +170,10 @@ function M.input(config, on_submit)
         win = vim.deepcopy(multiline_opts),
     }, vim.deepcopy(config or {}))
     local input = Snacks.input(opts, submit)
+    -- Prompt buffers block edits across line boundaries. Keep the Snacks
+    -- input behavior, but use a regular scratch buffer for multiline editing.
+    input.opts.bo.buftype = "nofile"
+    vim.bo[input.buf].buftype = "nofile"
     restore_context_folds(input)
     local confirm_pending = false
     -- Clears and submits the input once per confirmation action.
