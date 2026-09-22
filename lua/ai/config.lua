@@ -23,6 +23,7 @@ M.defaults = {
             },
             display = {
                 { key = "Tab", label = "input" },
+                { key = "Esc", label = "close" },
             },
         },
         keys = {
@@ -59,6 +60,7 @@ M.defaults = {
                 ["<C-w>j"] = { "focus_input", desc = "Focus AI chat input" },
                 ["<C-w><C-j>"] = { "focus_input", desc = "Focus AI chat input" },
                 ["<Tab>"] = { "focus_input", desc = "Focus AI chat input" },
+                ["<Esc>"] = { "close", desc = "Close AI chat" },
             },
         },
     },

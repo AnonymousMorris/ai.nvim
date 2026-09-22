@@ -67,6 +67,7 @@ assert_equal(#custom_hints.input, 1, "replaced input hint count")
 assert_equal(custom_hints.input[1].key, "x", "custom chat hint key")
 assert_equal(custom_hints.input[1].label, "display", "custom chat hint label")
 assert_equal(custom_hints.display[1].key, "Tab", "preserved display hints")
+assert_equal(custom_hints.display[2].key, "Esc", "preserved display close hint")
 for _, key in ipairs({ "<M-CR>", "<S-CR>" }) do
     assert_equal(
         Config.defaults.chat.keys.input[key][1],
@@ -115,6 +116,11 @@ assert_equal(
     "default display Tab key"
 )
 assert_equal(
+    Config.defaults.chat.keys.display["<Esc>"][1],
+    "close",
+    "default display Escape key"
+)
+assert_equal(
     Config.defaults.chat.keys.input["<C-k>"],
     nil,
     "removed input Control-K key"
@@ -142,7 +148,7 @@ config.chat.keys = {}
 assert_equal(
     vim.tbl_count(Config.defaults.chat.keys.input)
         + vim.tbl_count(Config.defaults.chat.keys.display),
-    10,
+    11,
     "resolved config does not mutate defaults"
 )
 

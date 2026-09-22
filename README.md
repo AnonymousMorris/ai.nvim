@@ -75,7 +75,7 @@ vim.keymap.set("x", "<leader>ai", "<Cmd>AISelection<CR>", { desc = "Open AI chat
 | `:AISelection` | Add the visual selection to the chat input |
 | `:AIStop` | Stop the agent and delete the current session |
 
-Switching to the input enters insert mode automatically. The transcript and input use separate rounded windows, with a configurable contextual hint bar below them. In the input, `<Enter>` sends the prompt and focuses the transcript. If the AI is still processing the current turn, `<Enter>` sends the message as a steering instruction instead. `<S-Enter>` inserts a newline, and `<C-c>` clears a non-empty prompt; press `<C-c>` with an empty prompt to interrupt the current AI turn. Closing the chat window keeps the session alive. Run `:AI` to reopen it or `:AIStop` to end it.
+Switching to the input enters insert mode automatically. The transcript and input use separate rounded windows, with a configurable contextual hint bar below them. In the input, `<Enter>` sends the prompt and focuses the transcript. If the AI is still processing the current turn, `<Enter>` sends the message as a steering instruction instead. `<S-Enter>` inserts a newline, and `<C-c>` clears a non-empty prompt; press `<C-c>` with an empty prompt to interrupt the current AI turn. Press `<Esc>` while focused on the transcript to close the chat. Closing the chat window keeps the session alive. Run `:AI` to reopen it or `:AIStop` to end it.
 
 Selection context is inserted with its file and line range. Context blocks are folded by default.
 
@@ -113,6 +113,7 @@ The expanded lazy.nvim configuration below shows the plugin's actual defaults. I
         },
         display = {
           { key = "Tab", label = "input" },
+          { key = "Esc", label = "close" },
         },
       },
       keys = {
@@ -163,6 +164,10 @@ The expanded lazy.nvim configuration below shows the plugin's actual defaults. I
           ["<Tab>"] = {
             "focus_input",
             desc = "Focus AI chat input",
+          },
+          ["<Esc>"] = {
+            "close",
+            desc = "Close AI chat",
           },
         },
       },

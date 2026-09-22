@@ -215,6 +215,7 @@ vim.cmd.stopinsert()
 vim.api.nvim_set_current_win(chat.display.win)
 local display_hints = virtual_text(chat.hints.buf)
 assert_contains(display_hints, "Tab input", "display WinEnter hint")
+assert_contains(display_hints, "Esc close", "display close hint")
 assert(
     not display_hints:find("send", 1, true),
     "display hints retained input actions"
@@ -248,6 +249,12 @@ assert_equal(
     insert_tab and insert_tab.desc,
     "Focus AI chat display",
     "insert mode focus display key"
+)
+local display_escape = find_keymap(chat.display.buf, "n", "<Esc>")
+assert_equal(
+    display_escape and display_escape.desc,
+    "Close AI chat",
+    "display Escape key"
 )
 for _, key in ipairs({ "<M-CR>", "<S-CR>" }) do
     local insert_newline = find_keymap(chat.input.buf, "i", key)
@@ -386,13 +393,13 @@ assert(
     "final input cursor: " .. vim.inspect(final_input_cursor)
 )
 final_chat:focus_display()
-vim.api.nvim_feedkeys("q", "mx", false)
+vim.api.nvim_feedkeys(vim.keycode("<Esc>"), "mx", false)
 wait_for_close(final_chat)
-assert_equal(session.chat, nil, "session chat after final close")
+assert_equal(session.chat, nil, "session chat after display Escape")
 assert_equal(
     vim.api.nvim_get_current_win(),
     source_win,
-    "display quit source focus"
+    "display Escape source focus"
 )
 
 Chat.setup({
