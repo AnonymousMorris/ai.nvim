@@ -1,6 +1,6 @@
 local M = {}
 
----Returns the active visual selection with its source location.
+---Returns the active visual selection fenced with its filetype and source location.
 ---@param agent_spawn_dir string Directory from which the agent was spawned.
 ---@return string? context
 function M.get_visual_context(agent_spawn_dir)
@@ -37,11 +37,20 @@ function M.get_visual_context(agent_spawn_dir)
         line_label = ("Lines: %d-%d"):format(start_line, end_line)
     end
 
+    local text = table.concat(lines, "\n")
+    local fence_length = 3
+    for run in text:gmatch("`+") do
+        fence_length = math.max(fence_length, #run + 1)
+    end
+    local fence = string.rep("`", fence_length)
+
     return table.concat({
         "File: " .. name,
         line_label,
         "",
-        table.concat(lines, "\n"),
+        fence .. vim.bo.filetype,
+        text,
+        fence,
     }, "\n")
 end
 

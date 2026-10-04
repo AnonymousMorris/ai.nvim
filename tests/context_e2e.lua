@@ -73,6 +73,7 @@ local source_buf = vim.api.nvim_create_buf(true, false)
 local source_path = "tests/fixtures/context_source.lua"
 vim.api.nvim_buf_set_name(source_buf, repo .. "/" .. source_path)
 vim.api.nvim_set_current_buf(source_buf)
+vim.bo[source_buf].filetype = "lua"
 vim.api.nvim_buf_set_lines(source_buf, 0, -1, false, {
     "local alpha = one()",
     "local beta = two()",
@@ -84,7 +85,9 @@ local character_context = table.concat({
     "File: " .. source_path,
     "Line: 1",
     "",
+    "```lua",
     "alpha",
+    "```",
 }, "\n")
 assert_equal(
     Context.get_visual_context(repo),
@@ -117,7 +120,9 @@ assert_equal(
         "File: " .. source_path,
         "Line: 1",
         "",
+        "```lua",
         "alpha",
+        "```",
         "",
         "",
     },
@@ -126,14 +131,14 @@ assert_equal(
 assert_equal(vim.api.nvim_get_current_win(), chat.input.win, "selection input focus")
 assert_equal(
     vim.api.nvim_win_get_cursor(chat.input.win),
-    { 6, 0 },
+    { 8, 0 },
     "selection input cursor"
 )
 assert_equal(
     vim.api.nvim_win_call(chat.input.win, function()
         return { vim.fn.foldclosed(1), vim.fn.foldclosedend(1) }
     end),
-    { 1, 4 },
+    { 1, 6 },
     "selection context fold"
 )
 assert_equal(
@@ -178,7 +183,7 @@ assert_equal(
     1,
     "reclosed selection context fold"
 )
-vim.api.nvim_win_set_cursor(chat.input.win, { 6, 0 })
+vim.api.nvim_win_set_cursor(chat.input.win, { 8, 0 })
 vim.cmd("startinsert")
 assert_equal(
     vim.wo[chat.input.win].foldcolumn,
@@ -189,7 +194,7 @@ assert(
     vim.wo[chat.input.win].statuscolumn:find("%%C"),
     "selection input status column omitted fold controls"
 )
-vim.api.nvim_buf_set_lines(session.input_buf, 5, 6, false, { "explain this" })
+vim.api.nvim_buf_set_lines(session.input_buf, 7, 8, false, { "explain this" })
 chat.input:execute("confirm")
 assert(
     vim.wait(1000, function()
@@ -208,7 +213,9 @@ assert_equal(
         "user: File: " .. source_path,
         "Line: 1",
         "",
+        "```lua",
         "alpha",
+        "```",
         "",
         "explain this",
         "---",
@@ -231,8 +238,10 @@ local line_context = table.concat({
     "File: " .. source_path,
     "Lines: 1-2",
     "",
+    "```lua",
     "local alpha = one()",
     "local beta = two()",
+    "```",
 }, "\n")
 assert_equal(
     Context.get_visual_context(repo),
@@ -249,8 +258,10 @@ assert_equal(
         "File: " .. source_path,
         "Lines: 1-2",
         "",
+        "```lua",
         "local alpha = one()",
         "local beta = two()",
+        "```",
         "",
         "",
     },
@@ -261,7 +272,7 @@ assert_equal(
     vim.api.nvim_win_call(reopened_chat.input.win, function()
         return { vim.fn.foldclosed(1), vim.fn.foldclosedend(1) }
     end),
-    { 1, 5 },
+    { 1, 7 },
     "reopened selection context fold"
 )
 assert_equal(
@@ -278,7 +289,7 @@ vim.api.nvim_win_set_cursor(0, { 1, 0 })
 vim.cmd("normal! V")
 assert_equal(
     Context.get_visual_context(repo),
-    "File: [No Name]\nLine: 1\n\nunnamed context",
+    "File: [No Name]\nLine: 1\n\n```\nunnamed context\n```",
     "unnamed buffer selection context"
 )
 vim.api.nvim_feedkeys("\\ai", "mx", false)
@@ -289,13 +300,17 @@ assert_equal(
         "File: [No Name]",
         "Line: 1",
         "",
+        "```",
         "unnamed context",
+        "```",
         "",
         "File: " .. source_path,
         "Lines: 1-2",
         "",
+        "```lua",
         "local alpha = one()",
         "local beta = two()",
+        "```",
         "",
         "",
     },
@@ -306,11 +321,11 @@ assert_equal(
         return {
             vim.fn.foldclosed(1),
             vim.fn.foldclosedend(1),
-            vim.fn.foldclosed(6),
-            vim.fn.foldclosedend(6),
+            vim.fn.foldclosed(8),
+            vim.fn.foldclosedend(8),
         }
     end),
-    { 1, 4, 6, 10 },
+    { 1, 6, 8, 14 },
     "stacked selection context folds"
 )
 assert_equal(
@@ -322,7 +337,7 @@ vim.cmd("stopinsert")
 vim.api.nvim_feedkeys("zR", "mx", false)
 assert_equal(
     vim.api.nvim_win_call(stacked_chat.input.win, function()
-        return { vim.fn.foldclosed(1), vim.fn.foldclosed(6) }
+        return { vim.fn.foldclosed(1), vim.fn.foldclosed(8) }
     end),
     { -1, -1 },
     "opened stacked selection folds"
@@ -330,9 +345,9 @@ assert_equal(
 vim.api.nvim_feedkeys("zM", "mx", false)
 assert_equal(
     vim.api.nvim_win_call(stacked_chat.input.win, function()
-        return { vim.fn.foldclosed(1), vim.fn.foldclosed(6) }
+        return { vim.fn.foldclosed(1), vim.fn.foldclosed(8) }
     end),
-    { 1, 6 },
+    { 1, 8 },
     "reclosed stacked selection folds"
 )
 
@@ -344,6 +359,90 @@ assert_equal(
     "Control-C did not clear selection context"
 )
 assert_equal(backend.interrupted, nil, "selection clear interrupted the backend")
+
+session:close_window()
+vim.api.nvim_set_current_buf(source_buf)
+vim.bo[source_buf].filetype = ""
+vim.api.nvim_win_set_cursor(0, { 1, 0 })
+vim.cmd("normal! V")
+assert_equal(
+    Context.get_visual_context(repo),
+    "File: " .. source_path .. "\nLine: 1\n\n```\nlocal alpha = one()\n```",
+    "named buffer without a filetype uses an unlabeled fence"
+)
+vim.api.nvim_feedkeys(vim.keycode("<Esc>"), "nx", false)
+vim.bo[source_buf].filetype = "python"
+vim.api.nvim_win_set_cursor(0, { 1, 0 })
+vim.api.nvim_feedkeys(vim.keycode("<C-v>j4l"), "nx", false)
+assert_equal(vim.fn.mode(), "\22", "active blockwise visual mode")
+local block_context = table.concat({
+    "File: " .. source_path,
+    "Lines: 1-2",
+    "",
+    "```python",
+    "local",
+    "local",
+    "```",
+}, "\n")
+assert_equal(
+    Context.get_visual_context(repo),
+    block_context,
+    "blockwise selection uses the buffer filetype rather than the extension"
+)
+vim.api.nvim_feedkeys("\\ai", "mx", false)
+local block_chat = assert(session.chat, "blockwise selection did not reopen chat")
+block_chat.input:execute("confirm")
+assert(
+    vim.wait(1000, function()
+        return #backend.events == 3
+    end),
+    "blockwise selection was not submitted"
+)
+assert_equal(backend.events[3], {
+    type = EventType.USER,
+    content = block_context .. "\n\n",
+}, "blockwise selection fence submitted unchanged")
+
+session:close_window()
+vim.api.nvim_set_current_buf(source_buf)
+vim.bo[source_buf].filetype = "markdown"
+vim.api.nvim_buf_set_lines(source_buf, 0, -1, false, {
+    "```lua",
+    "print('example')",
+    "```",
+    "This is still selected source text with ```` backticks.",
+})
+vim.api.nvim_win_set_cursor(0, { 1, 0 })
+vim.cmd("normal! V3j")
+vim.api.nvim_feedkeys("\\ai", "mx", false)
+local markdown_chat = assert(session.chat, "Markdown selection did not reopen chat")
+local markdown_context = table.concat({
+    "File: " .. source_path,
+    "Lines: 1-4",
+    "",
+    "`````markdown",
+    "```lua",
+    "print('example')",
+    "```",
+    "This is still selected source text with ```` backticks.",
+    "`````",
+}, "\n")
+assert_equal(
+    vim.api.nvim_buf_get_lines(session.input_buf, 0, -1, false),
+    vim.split(markdown_context .. "\n\n", "\n", { plain = true }),
+    "Markdown selection fence is longer than every selected backtick run"
+)
+markdown_chat.input:execute("confirm")
+assert(
+    vim.wait(1000, function()
+        return #backend.events == 4
+    end),
+    "Markdown selection was not submitted"
+)
+assert_equal(backend.events[4], {
+    type = EventType.USER,
+    content = markdown_context .. "\n\n",
+}, "nested Markdown fences submitted unchanged")
 
 print("Context E2E checks passed")
 vim.cmd("qa!")
